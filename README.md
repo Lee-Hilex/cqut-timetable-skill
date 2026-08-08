@@ -1,10 +1,19 @@
 # 🎓 cqut-timetable-skill
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 重庆理工大学课表查询 Skill —— 通过 AI 助手直接问"今天有什么课",自动算周次、解析单双周。
 
 本项目是 [Reasonix](https://reasonix.ai) / Claude / 各类 Agent 可用的**技能包(Skill)**,也可作为独立命令行工具使用。核心价值:把"登录教务 → 抓课表 → 算周次 → 回答"全链路自动化,以后每天只需问一句。
 
 > ⚠️ 本项目针对重庆理工大学定制(正方教务系统 + UIS 统一身份认证 + 瑞数 WAF)。其他使用正方教务+统一认证的高校可参考 `fetch_schedule_browser.py` 的 SSO 流程自行适配。
+
+## 📥 下载
+
+直接下载 zip 包(v1.0.0): [cqut-timetable-skill-1.0.0.zip](dist/cqut-timetable-skill-1.0.0.zip)
+
+或通过 GitHub Releases 下载对应版本源码包。
 
 ---
 
