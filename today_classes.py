@@ -66,8 +66,7 @@ def ensure_campus(cfg, config_path):
     print('检测到旧版配置(作息表为单一数组)。请选择你的校区:')
     print('  1) 花溪校区 (8:20 开始, 11 节)')
     print('  2) 两江校区 (8:30 开始, 10 节)')
-    choice = input('请输入 1 或 2 [默认 1]: ').strip()
-    choice = choice.replace('\ufeff', '').replace('\x00', '').strip()
+    choice = input('请输入 1 或 2 [默认 1]: ').strip().replace('\ufeff','').replace('\x00','')
     campus = 'liangjiang' if choice == '2' else DEFAULT_CAMPUS
 
     cfg['campus'] = campus
@@ -131,9 +130,6 @@ def ensure_semester_start(cfg, config_path, schedule=None):
     ans = d.isoformat()
 
     cfg['semester_start'] = ans
-    # 自动派生第一周周一(开学日所在自然周的周一)
-    first_monday = d - datetime.timedelta(days=d.weekday())
-    cfg['semester_first_monday'] = first_monday.isoformat()
     try:
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
@@ -241,19 +237,30 @@ def query(cfg, campus, schedule, week, day):
                 'room': c.get('courseRoom'),
                 'campus': c.get('campus'),
                 'credit': c.get('credit'),
+                'courseId': c.get('courseId'),
+                'courseTitle': c.get('courseTitle'),
             })
     results.sort(key=lambda x: x['sessionStart'])
     return results
 
 
+def _course_key(c):
+    """课程去重键: 优先 courseId, fallback 为 courseTitle"""
+    return c.get('courseId','') or c.get('courseTitle','')
+
+
 def total_credit(schedule):
     """学期总学分(按课程去重求和)"""
+    seen = set()
     total = 0.0
     for c in schedule.get('courses', []):
-        try:
-            total += float(c.get('credit') or 0)
-        except (TypeError, ValueError):
-            pass
+        kid = _course_key(c)
+        if kid and kid not in seen:
+            seen.add(kid)
+            try:
+                total += float(c.get('credit') or 0)
+            except (TypeError, ValueError):
+                pass
     return total
 
 
@@ -281,8 +288,11 @@ def render_table(rows, campus):
         cells = []
         for i, c in enumerate(cols):
             v = str(r[c] or '')
-            if len(v) > 28:
-                v = v[:27] + '…'
+            if disp_width(v) > widths[i]:
+                # 从右向左逐字符削减到宽度内,补 …
+                while disp_width(v) > widths[i] - 1 and len(v) > 1:
+                    v = v[:-1]
+                v = v + '…'
             cells.append(' ' + pad(v, widths[i]) + ' ')
         lines.append('│' + '│'.join(cells) + '│')
     lines.append(foot)
@@ -296,17 +306,29 @@ def fmt_result(week, day, results, today, schedule, campus):
     campus_name = CAMPUS_CN.get(campus, '')
     table = render_table(results, campus)
     if not table:
-        return f'{header}\n🟢 {campus_name} 今天没有课,可以休息!'
+        hint = ''
+        max_week = 0
+        for c in schedule.get('courses', []):
+            w = parse_weeks(c.get('weeks', ''))
+            if w:
+                max_week = max(max_week, max(w))
+        if week > max_week > 0:
+            hint = f'\n💡 当前第{week}周已超过课表最大第{max_week}周,学期可能已结束'
+        return f'{header}\n🟢 {campus_name} 今天没有课,可以休息!{hint}'
     lines = [header, table]
     if campus_name:
         lines.append(f'🏫 {campus_name} · 共 {len(results)} 门课')
     # 学分统计
+    seen_courses = set()
     day_credit = 0.0
     for r in results:
-        try:
-            day_credit += float(r.get('credit') or 0)
-        except (TypeError, ValueError):
-            pass
+        kid = _course_key(r)
+        if kid and kid not in seen_courses:
+            seen_courses.add(kid)
+            try:
+                day_credit += float(r.get('credit') or 0)
+            except (TypeError, ValueError):
+                pass
     ttl = total_credit(schedule)
     if ttl > 0:
         pct = day_credit / ttl * 100

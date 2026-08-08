@@ -57,7 +57,8 @@ def check_chromium():
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
-            p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True)
+            browser.close()
         print('  ✅ Chromium 可用')
         return True
     except Exception:

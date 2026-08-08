@@ -55,8 +55,9 @@ def login_uis(page, sid, pwd):
         page.wait_for_timeout(5000)
     if 'ehall' not in page.url:
         tip = page.query_selector('.el-message, .el-form-item__error')
+        tip_text = tip.inner_text() if tip else ''
         raise RuntimeError('UIS 登录失败,当前 URL: ' + page.url
-                           + ('; 提示: ' + tip.inner_text() if tip else ''))
+                           + ('; 提示: ' + tip_text if tip_text else ''))
 
 
 def get_sso_ticket(ctx, page):
@@ -221,7 +222,9 @@ def main():
         ctx = browser.new_context(user_agent=UA)
         page = ctx.new_page()
         try:
-            print(f'① 登录统一身份认证 (学号 {cfg["sid"]})...')
+            sid = cfg['sid']
+            masked = sid[:4] + '*****' + sid[-2:] if len(sid) > 6 else '****'
+            print(f'① 登录统一身份认证 (学号 {masked})...')
             login_uis(page, cfg['sid'], cfg['pwd'])
             # ④ 在 ehall 域先自动推算开学日期(若用户未手动设置)
             if not cfg.get('semester_start'):

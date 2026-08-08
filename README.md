@@ -111,7 +111,6 @@ cp config.example.json config.json
 
 ```json
 {
-  "base_url": "https://jwxt.cqut.edu.cn/jwglxt",
   "sid": "你的学号",
   "pwd": "你的教务密码",
   "campus": "huaxi",
@@ -148,7 +147,6 @@ cp config.example.json config.json
 
 | 字段 | 说明 |
 |---|---|
-| `base_url` | 教务系统地址 |
 | `sid` / `pwd` | 统一身份认证账号(与 uis.cqut.edu.cn 相同) |
 | `campus` | 校区: `huaxi`(花溪)或 `liangjiang`(两江),决定用哪套作息时间 |
 | `semester_start` | 开学日期(第一周第一天,可能是周中;建议手动填写,如 `2026-09-02`) |
