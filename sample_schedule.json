@@ -1,0 +1,63 @@
+{
+  "name": "示例同学",
+  "studentId": "2025XXXXXX",
+  "className": "2025XXXX",
+  "major": "示例专业",
+  "schoolYear": "2026-2027",
+  "schoolTerm": "1",
+  "courseCount": 4,
+  "courses": [
+    {
+      "courseTitle": "示例课程A",
+      "teacher": "张老师",
+      "courseId": "DEMO001",
+      "courseSection": "1-2节",
+      "courseWeek": "2-16周",
+      "weekday": "1",
+      "campus": "示例校区",
+      "courseRoom": "1教0101",
+      "className": "(2026-2027-1)-DEMO001-01",
+      "credit": "3",
+      "weeklyHours": "4"
+    },
+    {
+      "courseTitle": "示例课程B",
+      "teacher": "李老师",
+      "courseId": "DEMO002",
+      "courseSection": "3-4节",
+      "courseWeek": "2-9周,11-16周",
+      "weekday": "3",
+      "campus": "示例校区",
+      "courseRoom": "2教0202",
+      "className": "(2026-2027-1)-DEMO002-01",
+      "credit": "2",
+      "weeklyHours": "2"
+    },
+    {
+      "courseTitle": "示例课程C(单周)",
+      "teacher": "王老师",
+      "courseId": "DEMO003",
+      "courseSection": "5-6节",
+      "courseWeek": "3-15周(单)",
+      "weekday": "4",
+      "campus": "示例校区",
+      "courseRoom": "3教0303",
+      "className": "(2026-2027-1)-DEMO003-01",
+      "credit": "1.5",
+      "weeklyHours": "2"
+    },
+    {
+      "courseTitle": "示例课程D(双周)",
+      "teacher": "赵老师",
+      "courseId": "DEMO004",
+      "courseSection": "7-8节",
+      "courseWeek": "2-16周(双)",
+      "weekday": "5",
+      "campus": "示例校区",
+      "courseRoom": "操场",
+      "className": "(2026-2027-1)-DEMO004-01",
+      "credit": "1",
+      "weeklyHours": "2"
+    }
+  ]
+}
