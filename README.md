@@ -1,6 +1,6 @@
 # 🎓 cqut-timetable-skill
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 重庆理工大学课表查询 Skill —— 通过 AI 助手直接问"今天有什么课",自动算周次、解析单双周。
@@ -11,7 +11,7 @@
 
 ## 📥 下载
 
-直接下载 zip 包(v1.0.0): [cqut-timetable-skill-1.0.0.zip](dist/cqut-timetable-skill-1.0.0.zip)
+直接下载 zip 包(v1.1.0): [cqut-timetable-skill-1.1.0.zip](dist/cqut-timetable-skill-1.1.0.zip)
 
 或通过 GitHub Releases 下载对应版本源码包。
 
@@ -20,18 +20,22 @@
 ## ✨ 功能
 
 - 🔐 **自动登录**:Playwright 真实浏览器走 UIS 统一身份认证(https://uis.cqut.edu.cn),自动处理瑞数 WAF、SSO 换票,无需手动操作
-- 📥 **自动抓课表**:通过 ehall "本科生教务管理系统"应用建立教务会话,调用正方课表接口,一键抓取整学期课表
-- 📅 **智能查询**:自动计算今天是第几周(基于学期开始日期),回答"今天/明天/某周周X 有什么课"
+- 📥 **自动抓课表**:通过 ehall `getApplicationUrl`(固定应用 code)拿 ticket 进教务,调用正方课表接口,一键抓取整学期课表
+- 📅 **开学日期自动检测**:抓课表时自动调用 ehall `getCurrentWeek` 接口反推本学期开学日期,写入配置,无需手动填写
+- 📅 **智能查询**:自动计算今天是第几周(基于开学日期),回答"今天/明天/某周周X 有什么课"
 - 🔄 **单双周支持**:正确解析 `15-19周(单)`、`10-16周(双)`、`4-6周,9-12周,14-18周` 等多段周次
+- ⏱️ **第一周不完整兼容**:开学日在周中时,周次按自然周对齐(开学日所在周即第 1 周),第一周不足 7 天也正确
+- 🎓 **学分展示**:查询结果带学分列,并统计"今日学分 / 学期总学分 (占比)"
+- 🏫 **双校区作息**:花溪(8:20 起 11 节)与两江(8:30 起 10 节)作息时间表,首次使用自动选择
 - 🗣️ **对话式**:装成 Skill 后,直接问"今天有什么课"即可
 
 ## 📦 项目结构
 
 ```
 cqut-timetable-skill/
-├── fetch_schedule_browser.py   # 抓取脚本: UIS 登录 → SSO → 教务会话 → 课表接口
-├── today_classes.py            # 查询工具: 算周次 + 单双周解析 + 按节次排序
-├── config.example.json         # 配置模板(学号/密码/学期开始日期/上课时间)
+├── fetch_schedule_browser.py   # 抓取脚本: UIS 登录 → SSO → 教务会话 → 课表接口 → 开学日期检测
+├── today_classes.py            # 查询工具: 算周次 + 单双周解析 + 学分统计 + 表格输出
+├── config.example.json         # 配置模板(学号/密码/校区/作息时间)
 ├── sample_schedule.json        # 示例课表(脱敏,演示用)
 ├── SKILL.md                    # Skill 定义(供 Agent 加载)
 └── .gitignore                  # 忽略真实 config.json 与真实课表(含个人信息)
@@ -83,12 +87,14 @@ cp config.example.json config.json
 | `base_url` | 教务系统地址 |
 | `sid` / `pwd` | 统一身份认证账号(与 uis.cqut.edu.cn 相同) |
 | `campus` | 校区: `huaxi`(花溪)或 `liangjiang`(两江),决定用哪套作息时间 |
-| `semester_start` | 学期第一周周一日期,决定周次计算 |
+| `semester_start` | 开学日期(第一周第一天,可能是周中;留空则抓取时自动检测,查询时交互询问) |
 | `class_time` | 按校区分组的作息时间表(花溪 11 节 8:20 起 / 两江 10 节 8:30 起) |
 
 > 🔒 `config.json` 已加入 `.gitignore`,学号密码不会进入版本库。
 >
 > 💡 首次使用(或旧版单作息配置)时,`today_classes.py` 会自动提示选择校区并升级配置,无需手动编辑 `class_time`。
+>
+> 📅 `semester_start` 可以不填:抓取课表时脚本自动调用 ehall `getCurrentWeek` 接口反推本学期开学日期并写入;若检测失败,查询时也会提示你手动输入一次。
 
 ### 3. 抓取课表
 
@@ -97,7 +103,9 @@ python fetch_schedule_browser.py --year 2026 --term 1
 # --term 1 = 秋季学期, 2 = 春季学期
 ```
 
-成功后生成 `schedule_2026_1.json`(包含姓名/学号/课程/老师/教室/周次/星期)。
+成功后:
+- 生成 `schedule_2026_1.json`(包含姓名/学号/课程/老师/教室/周次/星期/学分)
+- 若 `config.json` 未填 `semester_start`,自动检测开学日期并写入(如 `📅 已自动检测开学日期: 2026-08-24`)
 
 ### 4. 查询课表
 

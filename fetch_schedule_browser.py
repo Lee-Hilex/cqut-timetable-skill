@@ -125,6 +125,50 @@ def fetch_schedule_json(page, year, xqm):
     return json.loads(result['text'])
 
 
+def auto_detect_semester_start(ctx, page, year, term):
+    """通过 ehall getCurrentWeek 接口自动推算开学日期。
+
+    getCurrentWeek?schoolYear=<学年>&term=<学期> 返回当前是第几周:
+      - 正数: 学期进行中,如 23 = 第23周
+      - 负数: 未开学,如 -2 = 开学前第2周
+    第1周周一 = 今天所在自然周的周一 + (1 - nowWeek) * 7 天。
+
+    返回 'YYYY-MM-DD' 或 None(接口不可用)。
+    term: '1'=秋季(教务 term=1), '2'=春季(term=2)
+    """
+    import datetime
+    cks = ctx.cookies(EHALL)
+    mic = next((c['value'] for c in cks if c['name'] == 'micToken'), None)
+    if not mic:
+        return None
+    year = int(year)
+    school_year = f'{year}-{year + 1}' if term == '1' else f'{year - 1}-{year}'
+    try:
+        result = page.evaluate("""async ({mic, sy, term}) => {
+            const ts = Date.now();
+            const nonce = Math.floor(Math.random() * 1e14);
+            const url = '/normalservice/course/getCurrentWeek'
+                      + '?universityId=100005&appKey=pc-officeHall&timestamp=' + ts
+                      + '&nonce=' + nonce + '&clientCategory=PC&userType=STUDENT'
+                      + '&schoolYear=' + sy + '&term=' + term;
+            const r = await fetch(url, {headers: {'micToken': mic}});
+            const j = await r.json();
+            return j;
+        }""", {'mic': mic, 'sy': school_year, 'term': term})
+        if result.get('code') != '40001' or 'content' not in result:
+            return None
+        now_week = result['content'].get('nowWeek')
+        if now_week is None:
+            return None
+        today = datetime.date.today()
+        # 今天所在自然周的周一
+        this_monday = today - datetime.timedelta(days=today.weekday())
+        first_monday = this_monday + datetime.timedelta(days=(1 - int(now_week)) * 7)
+        return first_monday.isoformat()
+    except Exception:
+        return None
+
+
 def parse_schedule(jres):
     xs = jres.get('xsxx', {})
     courses = []
@@ -175,6 +219,19 @@ def main():
         try:
             print(f'① 登录统一身份认证 (学号 {cfg["sid"]})...')
             login_uis(page, cfg['sid'], cfg['pwd'])
+            # ④ 在 ehall 域先自动推算开学日期(若用户未手动设置)
+            if not cfg.get('semester_start'):
+                detected = auto_detect_semester_start(ctx, page, args.year, args.term)
+                if detected:
+                    cfg['semester_start'] = detected
+                    try:
+                        with open(args.config, 'w', encoding='utf-8') as f:
+                            json.dump(cfg, f, ensure_ascii=False, indent=2)
+                        print(f'   📅 已自动检测开学日期: {detected} (写入 {args.config})')
+                    except OSError:
+                        print(f'   ⚠️ 检测到开学日期 {detected},但无法写入 {args.config}')
+                else:
+                    print('   ⚠️ 未能自动检测开学日期,可运行 today_classes.py 时手动输入')
             print('② 获取 SSO ticket,进入教务系统...')
             open_jwglxt(ctx, page)
             print(f'③ 抓取 {args.year} 学年第{args.term}学期课表...')

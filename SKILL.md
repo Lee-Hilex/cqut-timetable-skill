@@ -1,6 +1,6 @@
 ---
 name: cqut-timetable
-description: 查询重庆理工大学课表:回答"今天有什么课/明天/第几周上什么课"等,自动算周次、解析单双周。抓取需 Playwright+学号密码(config.json),查询零配置。
+description: 查询重庆理工大学课表:回答"今天有什么课/明天/第几周上什么课"等,自动算周次、解析单双周,带学分。抓取需 Playwright+学号密码(config.json),查询零配置。
 ---
 
 # 课表查询(cqut-timetable)
@@ -28,16 +28,22 @@ python <dir>/today_classes.py
 
 ## 周次规则
 
-- 学期第一周周一 = `config.json` 里 `semester_start`
-- 今天是第几周 = (今天 - semester_start) 天数 // 7 + 1
+- `semester_start` = 开学日期(第一周第一天,可能是周中);若缺失,首次查询会交互询问
+- 周次按自然周对齐: 开学日所在自然周(周一起)为第 1 周,第一周不足 7 天也正确
+- 今天是第几周 = (今天 - 开学日所在周周一) 天数 // 7 + 1
 - 课表周次格式支持: `2-6周`、`4-6周,9-12周,14-18周`、`15-19周(单)`、`10-16周(双)`、`11周`
 - 开学前(周次 0)提示未开学
 
+## 输出
+
+- 表格输出(时间/节次/课程/教师/学分/地点)
+- 底部统计: `🎓 今日学分 X / 学期总学分 Y (占比%)`
+
 ## 换学期流程
 
-1. 改 `config.json` 的 `semester_start` 为新学期第一周周一
-2. 运行 `python fetch_schedule_browser.py --year <学年> --term <1|2>` 重新抓取(需 Playwright + config.json 里学号密码有效)
-3. 生成新 `schedule_<学年>_<学期>.json` 后自动生效
+1. 运行 `python fetch_schedule_browser.py --year <学年> --term <1|2>` 重新抓取
+   - 若 `semester_start` 未填,脚本自动调用 ehall `getCurrentWeek` 反推开学日期并写入 config
+2. 生成新 `schedule_<学年>_<学期>.json` 后自动生效
 
 ## 注意事项
 
