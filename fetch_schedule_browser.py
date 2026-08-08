@@ -164,7 +164,11 @@ def auto_detect_semester_start(ctx, page, year, term):
         # 今天所在自然周的周一
         this_monday = today - datetime.timedelta(days=today.weekday())
         first_monday = this_monday + datetime.timedelta(days=(1 - int(now_week)) * 7)
-        return first_monday.isoformat()
+        detected = first_monday.isoformat()
+        # 可靠性说明: nowWeek 为负(未开学)时,教务返回的周次可能是占位值,
+        # 反推结果仅供参考,调用方应提示用户人工确认。
+        reliable = int(now_week) > 0
+        return {'date': detected, 'reliable': reliable}
     except Exception:
         return None
 
@@ -222,14 +226,20 @@ def main():
             # ④ 在 ehall 域先自动推算开学日期(若用户未手动设置)
             if not cfg.get('semester_start'):
                 detected = auto_detect_semester_start(ctx, page, args.year, args.term)
-                if detected:
-                    cfg['semester_start'] = detected
-                    try:
-                        with open(args.config, 'w', encoding='utf-8') as f:
-                            json.dump(cfg, f, ensure_ascii=False, indent=2)
-                        print(f'   📅 已自动检测开学日期: {detected} (写入 {args.config})')
-                    except OSError:
-                        print(f'   ⚠️ 检测到开学日期 {detected},但无法写入 {args.config}')
+                if detected and detected.get('date'):
+                    date_str = detected['date']
+                    if detected.get('reliable'):
+                        cfg['semester_start'] = date_str
+                        try:
+                            with open(args.config, 'w', encoding='utf-8') as f:
+                                json.dump(cfg, f, ensure_ascii=False, indent=2)
+                            print(f'   📅 已自动检测开学日期: {date_str} (写入 {args.config})')
+                        except OSError:
+                            print(f'   ⚠️ 检测到开学日期 {date_str},但无法写入 {args.config}')
+                    else:
+                        print(f'   ⚠️ 教务返回开学日期疑似 {date_str}(未开学,周次可能不准)。')
+                        print(f'     请核对开学日期: 运行 today_classes.py 时输入,'
+                              f'或在 {args.config} 填 semester_start')
                 else:
                     print('   ⚠️ 未能自动检测开学日期,可运行 today_classes.py 时手动输入')
             print('② 获取 SSO ticket,进入教务系统...')
