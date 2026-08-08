@@ -1,6 +1,6 @@
 # 🎓 cqut-timetable-skill
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 重庆理工大学课表查询 Skill —— 通过 AI 助手直接问"今天有什么课",自动算周次、解析单双周。
@@ -11,7 +11,7 @@
 
 ## 📥 下载
 
-直接下载 zip 包(v1.1.0): [cqut-timetable-skill-1.1.0.zip](dist/cqut-timetable-skill-1.1.0.zip)
+直接下载 zip 包(v1.1.1): [cqut-timetable-skill-1.1.1.zip](dist/cqut-timetable-skill-1.1.1.zip)
 
 或通过 GitHub Releases 下载对应版本源码包。
 
