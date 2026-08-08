@@ -200,15 +200,20 @@ def parse_session(course_section):
     return 0, 0
 
 
-def get_class_time(cfg, campus, start_session):
-    """根据校区+起始节次查上课时间"""
+def get_class_time(cfg, campus, start_session, end_session=None):
+    """根据校区+节次范围查上课时间段,返回如 '08:20-09:05'"""
     ct = cfg.get('class_time')
     if isinstance(ct, dict):
         times = ct.get(campus) or []
     else:
         times = ct or []
     if 1 <= start_session <= len(times):
-        return times[start_session - 1][0]
+        start = times[start_session - 1][0]
+        if end_session and 1 <= end_session <= len(times):
+            end = times[end_session - 1][1]
+        else:
+            end = times[start_session - 1][1]
+        return f'{start}-{end}'
     return '?'
 
 
@@ -231,7 +236,7 @@ def query(cfg, campus, schedule, week, day):
                 'sessions': c.get('courseSection'),
                 'sessionStart': s,
                 'sessionEnd': e,
-                'time': get_class_time(cfg, campus, s),
+                'time': get_class_time(cfg, campus, s, e),
                 'weeks': c.get('courseWeek'),
                 'room': c.get('courseRoom'),
                 'campus': c.get('campus'),
@@ -358,7 +363,7 @@ def main():
             for c in sorted(rows, key=lambda x: parse_session(x.get('courseSection'))[0]):
                 s, e = parse_session(c.get('courseSection'))
                 recs.append({
-                    'time': get_class_time(cfg, campus, s),
+                    'time': get_class_time(cfg, campus, s, e),
                     'sessions': c.get('courseSection'),
                     'course': c.get('courseTitle'),
                     'teacher': c.get('teacher'),
