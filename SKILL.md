@@ -41,6 +41,7 @@ python <dir>/today_classes.py
 
 ## 注意事项
 
-- 抓取走 UIS 统一身份认证(ehall"本科生教务管理系统"应用),SSO 会话自动建立
+- 抓取走 UIS 统一身份认证 + ehall `getApplicationUrl` 接口(应用 code `UIVx60`)拿 ticket,再经 `sso/yhiotlogin` 换票进教务,无需收藏或点击 UI
+- 校区: `config.json` 的 `campus` 字段(huaxi/liangjiang),决定作息时间;首次使用或旧配置会自动提示选择
 - 学号密码只存本机 config.json(已被 .gitignore 忽略),不外传
 - 没有真实课表时可用 `--schedule sample_schedule.json` 演示

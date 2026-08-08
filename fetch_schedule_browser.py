@@ -2,13 +2,14 @@
 """
 重庆理工大学课表抓取 - 统一身份认证(UIS SSO)方案
 
-流程:
+流程(不依赖个人收藏,任何用户可用):
   1. Playwright 打开 uis.cqut.edu.cn 统一认证,用学号密码登录
-  2. 在 ehall 个人中心点击收藏的"本科生教务管理系统"应用
-     (触发 SSO: getApplicationUrl -> sso/yhiotlogin?ticket= -> jwglxt/ticketlogin?uid=&verify=)
-  3. 教务系统建立会话,访问学生主页(index_initMenu.html)
-  4. 调用课表接口 xskbcx_cxXsKb.html 抓取整学期课表
-  5. 解析保存为 schedule_<学年>_<学期>.json
+  2. 从 ehall cookie 取 ump_token,调 getApplicationUrl 接口拿 oauth ticket
+     (applicationCode=UIVx60 是教务系统在 ehall 平台的固定应用 code)
+  3. 用 ticket 访问 jwxt.cqut.edu.cn/sso/yhiotlogin 完成 SSO 换票
+  4. 访问学生主页(index_initMenu.html)确认登录
+  5. 调用课表接口 xskbcx_cxXsKb.html 抓取整学期课表
+  6. 解析保存为 schedule_<学年>_<学期>.json
 
 用法: python fetch_schedule_browser.py --year 2026 --term 1 [--config config.json]
 """
@@ -27,27 +28,12 @@ UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 JWXT = 'https://jwxt.cqut.edu.cn'
 EHALL = 'https://ehall.cqut.edu.cn'
 UIS = 'https://uis.cqut.edu.cn'
+APP_CODE = 'UIVx60'  # 教务系统在 ehall 平台的应用 code(平台级配置,非个人收藏)
 
 
 def load_config(path):
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
-
-
-def click_app(page, app_name='本科生教务管理系统'):
-    """在 ehall 页面点击指定应用,触发 SSO 跳转"""
-    clicked = page.evaluate("""({appName}) => {
-        const els = [...document.querySelectorAll('*')];
-        for (const e of els) {
-            const t = (e.innerText || '').trim();
-            if (t === appName && e.children.length === 0) {
-                e.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-                return true;
-            }
-        }
-        return false;
-    }""", {'appName': app_name})
-    return clicked
 
 
 def login_uis(page, sid, pwd):
@@ -66,7 +52,6 @@ def login_uis(page, sid, pwd):
     btn.click()
     page.wait_for_timeout(10000)
     if 'ehall' not in page.url:
-        # 可能登录失败或跳转慢,再等等
         page.wait_for_timeout(5000)
     if 'ehall' not in page.url:
         tip = page.query_selector('.el-message, .el-form-item__error')
@@ -74,12 +59,39 @@ def login_uis(page, sid, pwd):
                            + ('; 提示: ' + tip.inner_text() if tip else ''))
 
 
+def get_sso_ticket(ctx, page):
+    """从 ehall cookie 取 ump_token,调 getApplicationUrl 拿教务 oauth ticket"""
+    cks = ctx.cookies(EHALL)
+    ump = next((c['value'] for c in cks if c['name'] == 'ump_token_pc-officeHall'), None)
+    if not ump:
+        raise RuntimeError('未找到 ump_token cookie,可能登录未成功')
+    ticket = page.evaluate("""async ({token, appCode}) => {
+        const ts = Date.now();
+        const nonce = Math.floor(Math.random() * 1e14);
+        const url = '/ump/' + 'officeHall/' + 'getApplicationUrl'
+                  + '?applicationCode=' + appCode
+                  + '&universityId=100005&appKey=pc-officeHall'
+                  + '&timestamp=' + ts + '&nonce=' + nonce + '&clientCategory=PC';
+        const r = await fetch(url, {headers: {'token': token}});
+        const j = await r.json();
+        if (!j || j.code !== '40001' || !j.content) {
+            throw new Error('getApplicationUrl 失败: ' + JSON.stringify(j).slice(0, 200));
+        }
+        return j.content.ticket;
+    }""", {'token': ump, 'appCode': APP_CODE})
+    if not ticket:
+        raise RuntimeError('getApplicationUrl 未返回 ticket')
+    return ticket
+
+
 def open_jwglxt(ctx, page):
-    """点击教务应用,建立教务会话,返回已登录的教务页面"""
-    if not click_app(page, '本科生教务管理系统'):
-        raise RuntimeError('ehall 中未找到"本科生教务管理系统"应用')
-    page.wait_for_timeout(8000)
-    # 打开教务学生主页(https),验证登录态
+    """用 ticket 走教务 SSO 换票,建立教务会话,返回已登录的教务页面"""
+    ticket = get_sso_ticket(ctx, page)
+    print(f'  已获取 SSO ticket,正在进入教务系统...')
+    page.goto(f'{JWXT}/sso/yhiotlogin?ticket={ticket}',
+              timeout=30000, wait_until='networkidle')
+    page.wait_for_timeout(5000)
+    # 打开学生主页确认登录态
     page.goto(JWXT + '/jwglxt/xtgl/index_initMenu.html?jsdm=xs',
               timeout=30000, wait_until='networkidle')
     page.wait_for_timeout(3000)
@@ -163,7 +175,7 @@ def main():
         try:
             print(f'① 登录统一身份认证 (学号 {cfg["sid"]})...')
             login_uis(page, cfg['sid'], cfg['pwd'])
-            print('② 进入办事大厅,打开教务系统...')
+            print('② 获取 SSO ticket,进入教务系统...')
             open_jwglxt(ctx, page)
             print(f'③ 抓取 {args.year} 学年第{args.term}学期课表...')
             jres = fetch_schedule_json(page, args.year, xqm)

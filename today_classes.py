@@ -9,25 +9,90 @@
   python today_classes.py --config config.json
   python today_classes.py --schedule schedule_2026_1.json
   python today_classes.py --list              # 列出全部课程(按星期)
+
+校区说明: config.json 的 campus 字段为 huaxi(花溪) 或 liangjiang(两江),
+          class_time 为按校区分组的作息时间表。首次使用会交互询问校区。
 """
 import argparse
-import calendar
 import datetime
 import json
 import os
 import re
 import sys
+import unicodedata
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 WEEKDAY_CN = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+CAMPUS_CN = {'huaxi': '花溪校区', 'liangjiang': '两江校区'}
+
+# 兼容旧配置: 若 class_time 是数组(非 dict),按花溪处理
+DEFAULT_CAMPUS = 'huaxi'
 
 
 def load_json(path):
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, 'r', encoding='utf-8-sig') as f:
         return json.load(f)
+
+
+def disp_width(s):
+    """计算字符串显示宽度(中文等全角字符按 2 计)"""
+    w = 0
+    for ch in s:
+        if unicodedata.east_asian_width(ch) in ('W', 'F'):
+            w += 2
+        else:
+            w += 1
+    return w
+
+
+def pad(s, width):
+    """按显示宽度左对齐补齐"""
+    return s + ' ' * max(0, width - disp_width(s))
+
+
+def ensure_campus(cfg, config_path):
+    """确保 config 有 campus 字段;没有则交互询问并写回。返回 (cfg, campus)"""
+    ct = cfg.get('class_time')
+    if isinstance(ct, dict):
+        campus = cfg.get('campus') or DEFAULT_CAMPUS
+        if campus not in ct:
+            campus = DEFAULT_CAMPUS
+        return cfg, campus
+
+    # 旧格式: 数组作息表 → 询问校区并升级配置
+    print('检测到旧版配置(作息表为单一数组)。请选择你的校区:')
+    print('  1) 花溪校区 (8:20 开始, 11 节)')
+    print('  2) 两江校区 (8:30 开始, 10 节)')
+    choice = input('请输入 1 或 2 [默认 1]: ').strip()
+    campus = 'liangjiang' if choice == '2' else DEFAULT_CAMPUS
+
+    cfg['campus'] = campus
+    # 提供双校区作息表
+    huaxi = [
+        ['08:20', '09:05'], ['09:15', '10:00'], ['10:20', '11:05'],
+        ['11:15', '12:00'], ['14:00', '14:45'], ['14:55', '15:40'],
+        ['16:00', '16:45'], ['16:55', '17:40'], ['19:00', '19:45'],
+        ['19:55', '20:40'], ['20:50', '21:35'],
+    ]
+    liangjiang = [
+        ['08:30', '09:15'], ['09:25', '10:10'], ['10:30', '11:15'],
+        ['11:25', '12:10'], ['14:20', '15:05'], ['15:15', '16:00'],
+        ['16:20', '17:05'], ['17:15', '18:00'], ['19:00', '19:45'],
+        ['19:50', '20:35'],
+    ]
+    cfg['class_time'] = {'huaxi': huaxi, 'liangjiang': liangjiang}
+
+    # 写回(若文件可写)
+    try:
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        print(f'✅ 已选择 {CAMPUS_CN[campus]},配置已写入 {config_path}')
+    except OSError:
+        print(f'⚠️ 无法写回 {config_path},本次使用 {CAMPUS_CN[campus]}')
+    return cfg, campus
 
 
 def parse_weeks(week_str):
@@ -79,15 +144,19 @@ def parse_session(course_section):
     return 0, 0
 
 
-def get_class_time(cfg, start_session):
-    """根据起始节次查上课时间(如第3节 -> 10:00)"""
-    times = cfg.get('class_time') or []
+def get_class_time(cfg, campus, start_session):
+    """根据校区+起始节次查上课时间"""
+    ct = cfg.get('class_time')
+    if isinstance(ct, dict):
+        times = ct.get(campus) or []
+    else:
+        times = ct or []
     if 1 <= start_session <= len(times):
         return times[start_session - 1][0]
     return '?'
 
 
-def query(cfg, schedule, week, day):
+def query(cfg, campus, schedule, week, day):
     """查询第 week 周星期 day(1-7) 的课程,按节次排序"""
     results = []
     for c in schedule.get('courses', []):
@@ -105,7 +174,8 @@ def query(cfg, schedule, week, day):
                 'teacher': c.get('teacher'),
                 'sessions': c.get('courseSection'),
                 'sessionStart': s,
-                'time': get_class_time(cfg, s),
+                'sessionEnd': e,
+                'time': get_class_time(cfg, campus, s),
                 'weeks': c.get('courseWeek'),
                 'room': c.get('courseRoom'),
                 'campus': c.get('campus'),
@@ -114,19 +184,49 @@ def query(cfg, schedule, week, day):
     return results
 
 
-def fmt_result(week, day, results, today, schedule):
-    lines = []
+def render_table(rows, campus):
+    """渲染美观的表格(考虑中英文宽度对齐)"""
+    if not rows:
+        return None
+    headers = ['时间', '节次', '课程', '教师', '地点']
+    cols = ['time', 'sessions', 'course', 'teacher', 'room']
+    # 计算每列最大宽度
+    widths = [disp_width(h) for h in headers]
+    for r in rows:
+        for i, c in enumerate(cols):
+            widths[i] = max(widths[i], disp_width(str(r[c] or '')))
+    # 上限
+    widths = [min(w, 28) for w in widths]
+
+    sep = '┌' + '┬'.join('─' * (w + 2) for w in widths) + '┐'
+    hdr = '│' + '│'.join(' ' + pad(h, w) + ' ' for h, w in zip(headers, widths)) + '│'
+    div = '├' + '┼'.join('─' * (w + 2) for w in widths) + '┤'
+    foot = '└' + '┴'.join('─' * (w + 2) for w in widths) + '┘'
+
+    lines = [sep, hdr, div]
+    for r in rows:
+        cells = []
+        for i, c in enumerate(cols):
+            v = str(r[c] or '')
+            if len(v) > 28:
+                v = v[:27] + '…'
+            cells.append(' ' + pad(v, widths[i]) + ' ')
+        lines.append('│' + '│'.join(cells) + '│')
+    lines.append(foot)
+    return '\n'.join(lines)
+
+
+def fmt_result(week, day, results, today, schedule, campus):
     term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
-    lines.append(f'📚 {term} 课表 · 第{week}周 {WEEKDAY_CN[day-1]}'
-                 f'({today.isoformat() if today else ""})')
-    if not results:
-        lines.append('🟢 今天没有课,可以休息!')
-        return '\n'.join(lines)
-    lines.append(f'共 {len(results)} 门课:')
-    for r in results:
-        loc = f"{r['campus']} {r['room']}".strip()
-        lines.append(f'  {r["time"]} {r["sessions"]} | {r["course"]}'
-                     f' | {r["teacher"]} | {loc}')
+    date_str = f"({today.isoformat()})" if today else ''
+    header = f'📚 {term} · 第{week}周 {WEEKDAY_CN[day-1]} {date_str}'
+    campus_name = CAMPUS_CN.get(campus, '')
+    table = render_table(results, campus)
+    if not table:
+        return f'{header}\n🟢 {campus_name} 今天没有课,可以休息!'
+    lines = [header, table]
+    if campus_name:
+        lines.append(f'🏫 {campus_name} · 共 {len(results)} 门课')
     return '\n'.join(lines)
 
 
@@ -140,7 +240,12 @@ def main():
     ap.add_argument('--list', action='store_true', help='列出全部课程')
     args = ap.parse_args()
 
-    cfg = load_json(args.config)
+    config_path = args.config
+    if not os.path.exists(config_path):
+        print(f'错误: 找不到配置文件 {config_path}')
+        sys.exit(1)
+    cfg = load_json(config_path)
+    cfg, campus = ensure_campus(cfg, config_path)
     semester_start = cfg.get('semester_start')
     if not semester_start:
         print('错误: config.json 缺少 semester_start(学期第一周周一日期)')
@@ -148,14 +253,13 @@ def main():
 
     sched_path = args.schedule
     if not sched_path:
-        # 自动找最新课表文件
         cands = sorted([f for f in os.listdir(BASE_DIR)
                         if f.startswith('schedule_') and f.endswith('.json')])
         if cands:
             sched_path = os.path.join(BASE_DIR, cands[-1])
     if not sched_path or not os.path.exists(sched_path):
-        print(f'错误: 找不到课表文件(schedule_*.json)。请先运行 '
-              f'fetch_schedule_browser.py 抓取课表,或用 --schedule 指定。')
+        print('错误: 找不到课表文件(schedule_*.json)。请先运行 '
+              'fetch_schedule_browser.py 抓取课表,或用 --schedule 指定。')
         sys.exit(1)
     schedule = load_json(sched_path)
 
@@ -164,16 +268,22 @@ def main():
               f'{schedule.get("major")} · {schedule.get("schoolYear")} 学年第'
               f'{schedule.get("schoolTerm")}学期)')
         for d in range(1, 8):
-            results = query(cfg, schedule, 99, d)  # week=99 不匹配任何周,只用于分组
-            # 直接按天分组
-            rows = [c for c in schedule.get('courses', []) if str(c.get('weekday')) == str(d)]
-            if rows:
-                print(f'\n{WEEKDAY_CN[d-1]}:')
-                for c in sorted(rows, key=lambda x: parse_session(x.get('courseSection'))[0]):
-                    s, e = parse_session(c.get('courseSection'))
-                    print(f'  {get_class_time(cfg, s)} {c.get("courseSection")} | '
-                          f'{c.get("courseTitle")} | {c.get("teacher")} | '
-                          f'{c.get("campus")} {c.get("courseRoom")} | {c.get("courseWeek")}')
+            rows = [c for c in schedule.get('courses', [])
+                    if str(c.get('weekday')) == str(d)]
+            if not rows:
+                continue
+            print(f'\n📅 {WEEKDAY_CN[d-1]}:')
+            recs = []
+            for c in sorted(rows, key=lambda x: parse_session(x.get('courseSection'))[0]):
+                s, e = parse_session(c.get('courseSection'))
+                recs.append({
+                    'time': get_class_time(cfg, campus, s),
+                    'sessions': c.get('courseSection'),
+                    'course': c.get('courseTitle'),
+                    'teacher': c.get('teacher'),
+                    'room': f"{c.get('campus')} {c.get('courseRoom')}",
+                })
+            print(render_table(recs, campus))
         return
 
     # 计算目标日期/周次
@@ -195,8 +305,8 @@ def main():
         print('课程从开学后第 1 周开始。')
         return
 
-    results = query(cfg, schedule, week, day)
-    print(fmt_result(week, day, results, today, schedule))
+    results = query(cfg, campus, schedule, week, day)
+    print(fmt_result(week, day, results, today, schedule, campus))
 
 
 if __name__ == '__main__':

@@ -52,12 +52,20 @@ cp config.example.json config.json
   "base_url": "https://jwxt.cqut.edu.cn/jwglxt",
   "sid": "你的学号",
   "pwd": "你的教务密码",
+  "campus": "huaxi",
   "semester_start": "2026-09-07",
-  "class_time": [
-    ["08:00", "08:45"],
-    ["08:55", "09:40"],
-    ...
-  ]
+  "class_time": {
+    "huaxi": [
+      ["08:20", "09:05"],
+      ["09:15", "10:00"],
+      ...
+    ],
+    "liangjiang": [
+      ["08:30", "09:15"],
+      ["09:25", "10:10"],
+      ...
+    ]
+  }
 }
 ```
 
@@ -65,10 +73,13 @@ cp config.example.json config.json
 |---|---|
 | `base_url` | 教务系统地址 |
 | `sid` / `pwd` | 统一身份认证账号(与 uis.cqut.edu.cn 相同) |
+| `campus` | 校区: `huaxi`(花溪)或 `liangjiang`(两江),决定用哪套作息时间 |
 | `semester_start` | 学期第一周周一日期,决定周次计算 |
-| `class_time` | 每节课的起止时间,共 11 节(重理工作息) |
+| `class_time` | 按校区分组的作息时间表(花溪 11 节 8:20 起 / 两江 10 节 8:30 起) |
 
 > 🔒 `config.json` 已加入 `.gitignore`,学号密码不会进入版本库。
+>
+> 💡 首次使用(或旧版单作息配置)时,`today_classes.py` 会自动提示选择校区并升级配置,无需手动编辑 `class_time`。
 
 ### 3. 抓取课表
 
@@ -106,10 +117,15 @@ python today_classes.py --list
 之后直接对话:
 
 > **你**: 今天有什么课?
-> **Agent**: 📚 2026-2027 学年第1学期 课表 · 第3周 周三
-> 共 2 门课:
->   08:00 1-2节 | 有机化学 | 周德文,陈志 | 花溪校区 3教0603
->   14:00 5-6节 | 中国近现代史纲要 | 刘海鑫 | 花溪校区 3教0409
+> **Agent**:
+> 📚 2026-2027 学年第1学期 · 第3周 周三
+> ┌───────┬───────┬────────────┬──────────┬─────────┐
+> │ 时间  │ 节次  │ 课程       │ 教师     │ 地点    │
+> ├───────┼───────┼────────────┼──────────┼─────────┤
+> │ 08:20 │ 1-2节 │ 示例课程A  │ 张老师   │ 1教0101 │
+> │ 14:00 │ 5-6节 │ 示例课程B  │ 李老师   │ 2教0202 │
+> └───────┴───────┴────────────┴──────────┴─────────┘
+> 🏫 花溪校区 · 共 2 门课
 
 ## 🧠 技术原理
 
@@ -118,15 +134,15 @@ python today_classes.py --list
 ```
 用户 → uis.cqut.edu.cn(统一认证/CAS)
      → ehall.cqut.edu.cn(办事大厅)
-     → 点击"本科生教务管理系统"应用
+     → 调 getApplicationUrl 接口(应用 code: UIVx60)拿 oauth ticket
        → jwxt.cqut.edu.cn/sso/yhiotlogin?ticket=...   (SSO 换票)
-       → jwglxt/ticketlogin?uid=...&verify=...          (教务建会话)
-       → jwglxt/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151    (课表接口)
+       → jwglxt/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151  (课表接口)
 ```
 
 关键点:
 - 教务系统直接 requests 登录会被 **瑞数 WAF** 拦截(返回 202/挑战页),必须用真实浏览器执行 JS
-- UIS 登录后默认跳 ehall,需点击"本科生教务管理系统"应用才能触发教务 SSO 换票
+- UIS 登录后从 ehall cookie 取 `ump_token_pc-officeHall`,调 `getApplicationUrl`(应用 code `UIVx60` 为教务系统在平台的固定 code,与个人收藏无关)即可拿到 oauth ticket,无需点击任何 UI
+- 用 ticket 访问 `sso/yhiotlogin` 完成换票,教务会话即建立
 - 课表接口 POST 需带 `xnm`(学年)、`xqm`(学期: 3=秋季, 12=春季)、`kzlx=ck`
 
 ## ⚠️ 免责声明
