@@ -7,6 +7,21 @@ description: 查询重庆理工大学课表:回答"今天有什么课/明天/第
 
 当用户问"今天有什么课""明天上什么课""第X周周X有什么课""这个学期都有哪些课"等与上课相关的问题时,使用本技能。
 
+## 首次使用:环境检查(必做)
+
+**安装/首次使用前,先检查环境依赖;缺失则自动下载安装。**
+
+1. 运行环境检查:
+   ```
+   python <dir>/check_deps.py
+   ```
+   - ✅ 全部就绪 → 直接使用
+   - ❌ 有缺失 → 运行 `python <dir>/check_deps.py --install` 自动下载安装缺失依赖
+2. 依赖清单:
+   - `today_classes.py`(查询): **零依赖**(纯 Python 标准库)
+   - `fetch_schedule_browser.py`(抓课表): 需 `playwright` + Chromium(检查脚本会自动 `pip install playwright` + `playwright install chromium`)
+3. 说明: **查询课表不需要任何第三方库**,只有"换学期重新抓课表"才需要 playwright + Chromium 浏览器。
+
 ## 工具位置
 
 - 项目目录: 本 skill 所在目录(含 `today_classes.py`、`fetch_schedule_browser.py`、`config.json`、`schedule_*.json`)

@@ -33,8 +33,9 @@
 
 ```
 cqut-timetable-skill/
+├── check_deps.py                # 环境依赖检查脚本: 缺失自动下载安装
 ├── fetch_schedule_browser.py   # 抓取脚本: UIS 登录 → SSO → 教务会话 → 课表接口 → 开学日期检测
-├── today_classes.py            # 查询工具: 算周次 + 单双周解析 + 学分统计 + 表格输出
+├── today_classes.py            # 查询工具: 算周次 + 单双周解析 + 学分统计 + 表格输出(零依赖)
 ├── config.example.json         # 配置模板(学号/密码/校区/作息时间)
 ├── sample_schedule.json        # 示例课表(脱敏,演示用)
 ├── SKILL.md                    # Skill 定义(供 Agent 加载)
@@ -46,11 +47,19 @@ cqut-timetable-skill/
 ### 1. 环境要求
 
 - Python 3.9+
-- Playwright + Chromium:
-  ```bash
-  pip install playwright
-  playwright install chromium
-  ```
+- **依赖自动处理**:本项目自带 `check_deps.py` 依赖检查脚本。**安装 Skill 或首次使用时会自动检查环境依赖,缺失的依赖会引导并自动下载安装**,无需手动逐个安装:
+
+```bash
+# 检查环境(会明确提示缺什么)
+python check_deps.py
+
+# 自动下载安装缺失依赖(playwright + Chromium)
+python check_deps.py --install
+```
+
+依赖说明:
+- **查询课表(`today_classes.py`): 零依赖**,纯 Python 标准库,装好即可用
+- **抓取课表(`fetch_schedule_browser.py`): 需要 `playwright` + Chromium**,`check_deps.py --install` 会自动执行 `pip install playwright` + `playwright install chromium`
 
 ### 2. 配置
 
@@ -161,6 +170,8 @@ $ python today_classes.py --date 2026-09-23
 ```
 /install-skill <本目录路径>
 ```
+
+> 🤖 **安装引导**:Agent 安装本 Skill 后,首次使用前会运行 `check_deps.py` 检查环境依赖,缺失的依赖会自动下载安装(见上方「环境要求」)。查询功能零依赖,可立即使用。
 
 之后直接对话:
 
