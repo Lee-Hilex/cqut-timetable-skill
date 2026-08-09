@@ -16,7 +16,7 @@
 [反馈问题](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [更新日志](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
 [快速开始](#快速开始) · [技术原理](#-技术原理) · [免责声明](#-免责声明)
 
-[![Version](https://img.shields.io/badge/version-1.2.3-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
+[![Version](https://img.shields.io/badge/version-1.2.4-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/Lee-Hilex/cqut-timetable-skill?color=ffcb47&labelColor=black)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
@@ -101,6 +101,7 @@
 - **🎯 大节计数(v1.2.0)** — 大学两节连堂:1-2节→第1大节,…,提问"有几节课"回答大节数(附小节数)
 - **📐 输出格式规范化(v1.2.2)** — 单日每大节三行(课程名称/课程教室/任课老师),单周七列×五行网格中教室加粗
 - **📋 原样输出强制(v1.2.3)** — Agent 必须直接展示脚本 stdout,禁止自行重排/转 markdown 表格/丢失教室加粗
+- **📝 Markdown 输出模式(v1.2.4)** — `--markdown` 输出规范的 markdown 表格(七列×五行、教室 `**` 加粗),Agent 原样粘贴即可在聊天中渲染成真表格
 - **👥 多教师省略号(v1.2.0)** — 多位教师(如 `张老师,李老师`)只显示第一个+`…`
 - **🔄 单双周 + 多段周次** — 正确解析 `15-19周(单)`、`10-16周(双)`、`4-6周,9-12周,14-18周`
 - **⏱️ 第一周不完整兼容** — 开学日在周中时按自然周对齐,第一周不足 7 天也正确
@@ -119,7 +120,7 @@
 
 | 方式 | 说明 |
 |------|------|
-| **zip 包(推荐)** | [cqut-timetable-skill-1.2.3.zip](dist/cqut-timetable-skill-1.2.3.zip) — 解压即用,含全部 11 个文件 |
+| **zip 包(推荐)** | [cqut-timetable-skill-1.2.4.zip](dist/cqut-timetable-skill-1.2.4.zip) — 解压即用,含全部 11 个文件 |
 | **GitHub Releases** | [Releases 页](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) 下载对应版本源码包 |
 | **Git 克隆** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
