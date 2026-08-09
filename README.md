@@ -1,6 +1,10 @@
 <!-- markdownlint-disable -->
 
-**简体中文**
+<div align="right">
+
+**<a href="README.md">🇨🇳 简体中文</a>** | <a href="README.en.md">🇬🇧 English</a>
+
+</div>
 
 <div align="center">
 
