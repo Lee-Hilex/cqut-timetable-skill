@@ -60,18 +60,20 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
   ┌──────────────────────┐
   │  1-2   08:20-10:00   │
-  │  Physical Chemistry  │
-  │  1-0516              │
-  │  Zhou W…             │
+  │  Demo Course A       │
+  │  1-0101              │
+  │  Teacher Zhang       │
   ├──────────────────────┤
   │  5-6   14:00-15:40   │
-  │  Organic Chemistry   │
-  │  3-0405              │
-  │  Zhou D…             │
+  │  Demo Course C       │
+  │  3-0303              │
+  │  Teacher Wang        │
   └──────────────────────┘
 
   🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
   ```
+
+  Each big section outputs three lines (course name / room / teacher), stacked top to bottom.
 
 - **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) × 5-row (big sections) grid, with course/room/teacher at a glance
 
@@ -80,13 +82,15 @@ Tired of opening the academic portal, typing your student ID and password, and f
   📅 2026-2027 AY Semester 1 · Week 3
   ┌──────┬────────┬────────┬────────┬────────┬────────┬──────┬──────┐
   │      │  Mon   │  Tue   │  Wed   │  Thu   │  Fri   │  Sat  │  Sun  │
-  │ 1-2  │        │Socialism│OrgChem │        │PhyChem │        │      │
-  │      │        │1-0708  │3-0603  │        │1-0516  │        │      │
-  │      │        │Hu CX   │Zhou D… │        │Zhou W… │        │      │
+  │ 1-2  │        │Demo A  │Demo B  │        │Demo D  │        │      │
+  │      │        │**1-0101**│**2-0202**│        │**Playgrnd**│        │      │
+  │      │        │Li      │Zhang   │        │Zhao    │        │      │
   ├──────┼────────┼────────┼────────┼────────┼────────┼──────┼──────┤
   …(5 big-section rows total)
   📊 This week: 11 big sections (11 sub-sessions)
   ```
+
+  The week grid is 7 columns (Mon–Sun) × 5 rows (big sections); each cell has three lines (course / room / teacher) with the **room in bold**.
 
 - **✏️ Custom courses (v1.2.0)** — add self-study, electives, etc. in `custom_courses.json`; auto-merged into schedule on query
 

@@ -236,6 +236,16 @@ def truncate_teacher(teacher_str):
     return teachers[0] if len(teachers) <= 1 else teachers[0] + '…'
 
 
+def bold_md(s):
+    """Markdown 加粗: 非空内容包 **,空内容原样返回"""
+    return f'**{s}**' if s else ''
+
+
+def plain_width(s):
+    """计算显示宽度,但忽略 Markdown 加粗符号(**),用于对齐计算"""
+    return disp_width(s.replace('**', ''))
+
+
 def load_custom_courses():
     """加载 custom_courses.json(脚本同目录),返回课程列表或 []"""
     custom_path = os.path.join(BASE_DIR, 'custom_courses.json')
@@ -482,15 +492,16 @@ def fmt_week_grid(week, results_by_day, schedule, campus, ttl):
             if 1 <= b <= 5 and not grid[b - 1][day - 1]:
                 grid[b - 1][day - 1] = [
                     str(r['course'] or ''),
-                    str(r['room'] or ''),
+                    bold_md(str(r['room'] or '')),
                     truncate_teacher(r.get('teacher', '')),
                 ]
             elif 1 <= b <= 5 and grid[b - 1][day - 1]:
                 # 同大节第二门课: 追加到已有格(罕见)
                 cell = grid[b - 1][day - 1]
                 cell[0] += '/' + str(r['course'] or '')
-                if str(r['room'] or '') not in cell[1]:
-                    cell[1] += '/' + str(r['room'] or '')
+                room = str(r['room'] or '')
+                if room and not room in cell[1].replace('**', ''):
+                    cell[1] = bold_md(cell[1].replace('**', '') + '/' + room)
 
     # 计算列宽
     label_width = 6
@@ -499,7 +510,7 @@ def fmt_week_grid(week, results_by_day, schedule, campus, ttl):
         for di in range(7):
             cell = grid[bi][di]
             for line in cell:
-                w = disp_width(line)
+                w = plain_width(line)
                 if w > day_widths[di]:
                     day_widths[di] = w
     day_widths = [max(w, 8) for w in day_widths]
