@@ -395,7 +395,7 @@ def _schedule_max_week(schedule, custom=None):
 # ── 单日卡片布局(纵向堆叠) ──────────────────────────────────
 
 def fmt_day_cards_md(week, day, results, today, schedule, campus, ttl):
-    """单日 markdown: 每大节一个块,标题行加粗 + 三行(课程名/教室/教师)"""
+    """单日 markdown 表格: 三列(节次+时间 / 课程 / 教室),教室加粗,紧凑"""
     term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
     date_str = f" ({today.isoformat()})" if today else ''
     campus_name = CAMPUS_CN.get(campus, '')
@@ -415,26 +415,17 @@ def fmt_day_cards_md(week, day, results, today, schedule, campus, ttl):
     lines.append(f'🏫 {campus_name} · 共 {big_count} 大节（{small_count} 小节）')
     lines.append('')
 
-    by_big = {}
+    # markdown 表格: 节次+时间 / 课程 / 教室
+    lines.append('| 节次 | 课程 | 教室 |')
+    lines.append('|---|---|---|')
     for r in results:
-        by_big.setdefault(r['big'], []).append(r)
-
-    for b in sorted(by_big):
-        entries = by_big[b]
-        label = BIG_SECTION_LABELS.get(b, f'大节{b}')
-        for j, r in enumerate(entries):
-            if j > 0:
-                lines.append('')  # 同大节内多门课(罕见)之间空行
-            lines.append(f'**{label} {r["time"]}**')
-            lines.append(str(r['course'] or ''))
-            lines.append(str(r['room'] or ''))
-            lines.append(truncate_teacher(r.get('teacher', '')))
-        lines.append('')
+        label = BIG_SECTION_LABELS.get(r['big'], f'大节{r["big"]}')
+        lines.append(f'| {label} {r["time"]} | {str(r["course"] or "")} | {bold_md(str(r["room"] or ""))} |')
 
     dc = day_credit_sum(results)
     if ttl > 0:
         pct = dc / ttl * 100
-        lines.append(f'🎓 今日学分 {dc:g} / 学期总学分 {ttl:g} ({pct:.1f}%)')
+        lines.append(f'\n🎓 今日学分 {dc:g} / 学期总学分 {ttl:g} ({pct:.1f}%)')
     return '\n'.join(lines)
 
 
@@ -523,41 +514,35 @@ def fmt_day_cards(week, day, results, today, schedule, campus, ttl):
 # ── 单周网格布局(七列×五行) ──────────────────────────────────
 
 def fmt_week_grid_md(week, results_by_day, schedule, campus, ttl):
-    """单周 markdown 表格: 七列(周一~周日),每个大节占三行(课程名/教室/教师),教室加粗。不用 <br>(raw HTML 会被转义)"""
+    """单周 markdown 表格: 七列(周一~周日),每大节一行,格内"课程 / **教室**",节次列带时间段。紧凑,不用 <br>(raw HTML 会被转义)"""
     term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
     campus_name = CAMPUS_CN.get(campus, '')
     lines = [f'📅 {term} · 第{week}周课表', f'🏫 {campus_name}', '']
 
-    # 构建 5×7 网格内容(与 ASCII 版共用逻辑)
-    grid = [[[] for _ in range(7)] for _ in range(5)]
+    # 构建 5×7 网格: 每格一行文本 "课程 / **教室**"; 记录每个大节的时间段
+    grid = [['' for _ in range(7)] for _ in range(5)]
+    big_times = {}
     for day in range(1, 8):
         for r in results_by_day.get(day, []):
             b = r['big']
-            if 1 <= b <= 5 and not grid[b - 1][day - 1]:
-                grid[b - 1][day - 1] = [
-                    str(r['course'] or ''),
-                    bold_md(str(r['room'] or '')),
-                    truncate_teacher(r.get('teacher', '')),
-                ]
-            elif 1 <= b <= 5 and grid[b - 1][day - 1]:
-                cell = grid[b - 1][day - 1]
-                cell[0] += '/' + str(r['course'] or '')
-                room = str(r['room'] or '')
-                if room and not room in cell[1].replace('**', ''):
-                    cell[1] = bold_md(cell[1].replace('**', '') + '/' + room)
+            if 1 <= b <= 5:
+                big_times.setdefault(b, r.get('time', ''))
+                entry = f"{str(r['course'] or '')} / {bold_md(str(r['room'] or ''))}".strip(' /')
+                if grid[b - 1][day - 1]:
+                    grid[b - 1][day - 1] += ' / ' + entry
+                else:
+                    grid[b - 1][day - 1] = entry
 
-    # markdown 表格: 每个大节占三行(课程名/教室/教师),教室加粗
+    # markdown 表格: 每大节一行
     headers = ['节次'] + WEEKDAY_CN[:7]
     lines.append('| ' + ' | '.join(headers) + ' |')
     lines.append('|' + '---|' * 8)
     for bi in range(5):
         label = BIG_SECTION_LABELS.get(bi + 1, '')
-        for sub in range(3):  # 0=课程名, 1=教室, 2=教师
-            cells = [label if sub == 0 else '']
-            for di in range(7):
-                cell = grid[bi][di]
-                cells.append(cell[sub] if len(cell) > sub else '')
-            lines.append('| ' + ' | '.join(cells) + ' |')
+        t = big_times.get(bi + 1, '')
+        label_cell = f'{label} {t}'.strip()
+        cells = [label_cell] + [grid[bi][di] for di in range(7)]
+        lines.append('| ' + ' | '.join(cells) + ' |')
 
     # 统计
     big_set = set()

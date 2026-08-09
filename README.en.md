@@ -73,9 +73,9 @@ Tired of opening the academic portal, typing your student ID and password, and f
   🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
   ```
 
-  Each big section outputs three lines (course name / room / teacher), stacked top to bottom.
+  Each day is a 3-column markdown table (sections+time / course / **room**), room bolded, compact.
 
-- **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) table, each big section occupying 3 rows (course / room / teacher) at a glance
+- **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) table, one row per big section, cells as `course / **room**`, time range in the section column
 
   ```text
   $ python today_classes.py --week 3
@@ -90,7 +90,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
   📊 This week: 11 big sections (11 sub-sessions)
   ```
 
-  The week grid is 7 columns (Mon–Sun); each big section occupies 3 rows (course / room / teacher) with the **room in bold**.
+  The week grid is 7 columns (Mon–Sun); one row per big section, cells as `course / **room**` with the time range in the section column and the **room in bold**.
 
 - **✏️ Custom courses (v1.2.0)** — add self-study, electives, etc. in `custom_courses.json`; auto-merged into schedule on query
 
@@ -99,7 +99,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
   ```
 
 - **🎯 Big-section counting (v1.2.0)** — consecutive sessions form "big sections" (1-2→1st, 3-4→2nd, … 5 total); "how many classes" answers in big sections (+ sub-sessions)
-- **📐 Output format (v1.2.2)** — each big section shows 3 lines (course / room / teacher) per day; week grid bolds the room
+- **📐 Output format (v1.2.2)** — compact day/week output: one row per big section as `course / **room**`, time range in section column, room bolded
 - **📋 Force verbatim output (v1.2.3)** — agent must show script stdout as-is; no re-formatting, no markdown tables, no dropped room bolding
 - **📝 Markdown output mode (v1.2.4)** — `--markdown` emits a proper markdown table (7×5, rooms `**` bolded); agent pastes it verbatim so the chat renders a real table
 - **👥 Teacher truncation (v1.2.0)** — multiple teachers (e.g. `Teacher Zhang, Teacher Li`) shown as first name + `…`
@@ -265,7 +265,7 @@ Teacher Wang
 🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
 ```
 
-> For a full-week schedule, the Agent likewise **shows the `--markdown` 7-column table verbatim** (each big section in 3 rows, rooms already bolded with `**`, rendered as bold).
+> For a full-week schedule, the Agent likewise **shows the `--markdown` 7-column table verbatim** (one row per big section, rooms already bolded with `**`, rendered as bold).
 
 ## 📦 Project Structure
 
