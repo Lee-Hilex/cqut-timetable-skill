@@ -16,7 +16,7 @@ Powered by Python + Playwright (real browser to bypass SSO / RS-WAF)
 [Issues](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [Changelog](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
 [Quick Start](#quick-start) · [How It Works](#-how-it-works) · [Disclaimer](#-disclaimer)
 
-[![Version](https://img.shields.io/badge/version-1.2.2-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
+[![Version](https://img.shields.io/badge/version-1.2.3-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/Lee-Hilex/cqut-timetable-skill?color=ffcb47&labelColor=black)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
@@ -100,6 +100,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
 - **🎯 Big-section counting (v1.2.0)** — consecutive sessions form "big sections" (1-2→1st, 3-4→2nd, … 5 total); "how many classes" answers in big sections (+ sub-sessions)
 - **📐 Output format (v1.2.2)** — each big section shows 3 lines (course / room / teacher) per day; week grid bolds the room
+- **📋 Force verbatim output (v1.2.3)** — agent must show script stdout as-is; no re-formatting, no markdown tables, no dropped room bolding
 - **👥 Teacher truncation (v1.2.0)** — multiple teachers (e.g. `Teacher Zhang, Teacher Li`) shown as first name + `…`
 - **🔄 Odd/even & multi-range weeks** — correctly parses `15-19w(odd)`, `10-16w(even)`, `4-6w,9-12w,14-18w`
 - **⏱️ Partial first week** — semester starting mid-week is handled correctly with natural week alignment
@@ -118,7 +119,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
 | Method | Instructions |
 |--------|-------------|
-| **Zip (recommended)** | [cqut-timetable-skill-1.2.2.zip](dist/cqut-timetable-skill-1.2.2.zip) — unzip and use; contains all 11 files |
+| **Zip (recommended)** | [cqut-timetable-skill-1.2.3.zip](dist/cqut-timetable-skill-1.2.3.zip) — unzip and use; contains all 11 files |
 | **GitHub Releases** | Download source archives from the [Releases page](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) |
 | **Git clone** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
