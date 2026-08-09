@@ -54,21 +54,14 @@ Tired of opening the academic portal, typing your student ID and password, and f
 - **📅 Smart querying** — auto-calculates the current academic week; ask "today / tomorrow / week X day Y" with credit stats
 
   ```text
-  $ python today_classes.py --date 2026-09-18
+  $ python today_classes.py --date 2026-09-18 --markdown
   📚 2026-2027 AY Semester 1 · Week 3 Friday (2026-09-18)
   🏫 Huaxi Campus · 2 big sections (2 sub-sessions)
 
-  ┌──────────────────────┐
-  │  1-2   08:20-10:00   │
-  │  Demo Course A       │
-  │  1-0101              │
-  │  Teacher Zhang       │
-  ├──────────────────────┤
-  │  5-6   14:00-15:40   │
-  │  Demo Course C       │
-  │  3-0303              │
-  │  Teacher Wang        │
-  └──────────────────────┘
+  | Sections | Course | Room |
+  |---|---|---|
+  | 1-2 08:20-10:00 | Demo Course A | **1-0101** |
+  | 5-6 14:00-15:40 | Demo Course C | **3-0303** |
 
   🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
   ```
@@ -78,19 +71,22 @@ Tired of opening the academic portal, typing your student ID and password, and f
 - **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) table, one row per big section, cells as `course / **room**`, time range in the section column
 
   ```text
-  $ python today_classes.py --week 3
+  $ python today_classes.py --week 3 --markdown
   📅 2026-2027 AY Semester 1 · Week 3
-  ┌──────┬────────┬────────┬────────┬────────┬────────┬──────┬──────┐
-  │      │  Mon   │  Tue   │  Wed   │  Thu   │  Fri   │  Sat  │  Sun  │
-  │ 1-2  │        │Demo A  │Demo B  │        │Demo D  │        │      │
-  │      │        │**1-0101**│**2-0202**│        │**Playgrnd**│        │      │
-  │      │        │Li      │Zhang   │        │Zhao    │        │      │
-  ├──────┼────────┼────────┼────────┼────────┼────────┼──────┼──────┤
-  …(5 big-section rows total)
+  🏫 Huaxi Campus
+
+  | Sections | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
+  |---|---|---|---|---|---|---|---|
+  | 1-2 08:20-10:00 |  | Demo A / **1-0101** | Demo B / **2-0202** |  | Demo D / **Playgrnd** |  |  |
+  | 3-4 10:20-12:00 | Demo E / **1-0102** |  |  |  |  |  |  |
+  | 5-6 14:00-15:40 |  |  |  |  |  |  |  |
+  | 7-8 16:00-17:40 |  |  |  |  |  |  |  |
+  | 9-10 |  |  |  |  |  |  |  |
+
   📊 This week: 11 big sections (11 sub-sessions)
   ```
 
-  The week grid is 7 columns (Mon–Sun); one row per big section, cells as `course / **room**` with the time range in the section column and the **room in bold**.
+  The week grid is a 7-column markdown table (Mon–Sun); one row per big section, cells as `course / **room**` with the time range in the section column and the **room in bold**.
 
 - **✏️ Custom courses (v1.2.0)** — add self-study, electives, etc. in `custom_courses.json`; auto-merged into schedule on query
 
@@ -103,7 +99,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 - **📋 Force verbatim output (v1.2.3)** — agent must show script stdout as-is; no re-formatting, no markdown tables, no dropped room bolding
 - **📝 Markdown output mode (v1.2.4)** — `--markdown` emits proper markdown tables (3-column day / 7-column week, rooms `**` bolded); agent pastes verbatim so the chat renders a real table
 - **📊 Compact table layout (v1.2.5)** — day & week outputs are compact markdown tables: one row per big section, cells as `course / **room**`, time range in the section column, no teacher; no more `<br>` (avoids chat UI escaping it to literal text)
-- **👥 Teacher truncation (v1.2.0)** — multiple teachers (e.g. `Teacher Zhang, Teacher Li`) shown as first name + `…`
+- **👥 Teacher truncation (v1.2.0)** — in `--list`, multiple teachers (e.g. `Teacher Zhang, Teacher Li`) shown as first name + `…` (day/week tables omit teachers)
 - **🔄 Odd/even & multi-range weeks** — correctly parses `15-19w(odd)`, `10-16w(even)`, `4-6w,9-12w,14-18w`
 - **⏱️ Partial first week** — semester starting mid-week is handled correctly with natural week alignment
 - **⏰ Time range display** — time column shows full range (e.g. `10:20-12:00`) with start-to-end for multi-session blocks, not just start time
@@ -253,15 +249,10 @@ Agent:
 📚 2026-2027 AY Semester 1 · Week 3 Friday
 🏫 Huaxi Campus · 2 big sections (2 sub-sessions)
 
-**1-2 08:20-10:00**
-Demo Course A
-1-0101
-Teacher Zhang
-
-**5-6 14:00-15:40**
-Demo Course C
-3-0303
-Teacher Wang
+| Sections | Course | Room |
+|---|---|---|
+| 1-2 08:20-10:00 | Demo Course A | **1-0101** |
+| 5-6 14:00-15:40 | Demo Course C | **3-0303** |
 
 🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
 ```
@@ -274,7 +265,7 @@ Teacher Wang
 cqut-timetable-skill/
 ├── check_deps.py                # Environment checker: auto-downloads & installs missing deps
 ├── fetch_schedule_browser.py    # Fetch script: UIS login → SSO → academic session → schedule API → semester start detection
-├── today_classes.py             # Query tool: week calc + odd/even parser + credit stats + table output (zero deps)
+├── today_classes.py             # Query tool: week calc + odd/even parser + credit stats + 3-col day / 7-col week tables (zero deps)
 ├── config.example.json          # Configuration template (ID / password / campus / bell schedule)
 ├── custom_courses.example.json  # Custom course template (self-study, electives; v1.2.0)
 ├── sample_schedule.json         # Sample schedule data (anonymized, for demo)
