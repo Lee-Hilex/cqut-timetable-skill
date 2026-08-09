@@ -224,7 +224,13 @@ python today_classes.py --week 15 --day 4
 
 # List all courses
 python today_classes.py --list
+
+# Agent / chat scenario: output markdown table (rooms bolded, show verbatim)
+python today_classes.py --week 3 --markdown
+python today_classes.py --date 2026-09-23 --markdown
 ```
+
+> 💡 Use the default ASCII grid in a terminal; when answering in a chat, the **Agent uses `--markdown`** to get a proper markdown table (7×5, rooms `**` bolded) that renders aligned.
 
 ## 🤖 As a Skill (Reasonix / Agent)
 
@@ -236,7 +242,7 @@ Copy this directory to your Agent's skills directory, or in Reasonix:
 
 > 🤖 **Install guide**: after installing this Skill, the Agent runs `check_deps.py` on first use to check the environment; missing dependencies are auto-downloaded (see Environment Check above). The query feature has zero dependencies and works immediately.
 
-Then just talk (the Agent runs `today_classes.py` and **shows the script output verbatim**):
+Then just talk (the Agent runs `today_classes.py --markdown` and **shows the script output verbatim**):
 
 ```text
 You: What classes do I have today?
@@ -245,22 +251,20 @@ Agent:
 📚 2026-2027 AY Semester 1 · Week 3 Friday
 🏫 Huaxi Campus · 2 big sections (2 sub-sessions)
 
-┌──────────────────────┐
-│  1-2   08:20-10:00   │
-│  Demo Course A       │
-│  1-0101              │
-│  Teacher Zhang       │
-├──────────────────────┤
-│  5-6   14:00-15:40   │
-│  Demo Course C       │
-│  3-0303              │
-│  Teacher Wang        │
-└──────────────────────┘
+**1-2 08:20-10:00**
+Demo Course A
+1-0101
+Teacher Zhang
+
+**5-6 14:00-15:40**
+Demo Course C
+3-0303
+Teacher Wang
 
 🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
 ```
 
-> For a full-week schedule, the Agent likewise **shows the 7-column × 5-row grid verbatim** (rooms already bolded with `**`); see the Week Grid View above.
+> For a full-week schedule, the Agent likewise **shows the `--markdown` 7-column × 5-row markdown table verbatim** (rooms already bolded with `**`, rendered as bold).
 
 ## 📦 Project Structure
 

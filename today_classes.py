@@ -394,6 +394,50 @@ def _schedule_max_week(schedule, custom=None):
 
 # ── 单日卡片布局(纵向堆叠) ──────────────────────────────────
 
+def fmt_day_cards_md(week, day, results, today, schedule, campus, ttl):
+    """单日 markdown: 每大节一个块,标题行加粗 + 三行(课程名/教室/教师)"""
+    term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
+    date_str = f" ({today.isoformat()})" if today else ''
+    campus_name = CAMPUS_CN.get(campus, '')
+    lines = [f'📚 {term} · 第{week}周 {WEEKDAY_CN[day - 1]}{date_str}']
+
+    if not results:
+        hint = ''
+        mw = _schedule_max_week(schedule)
+        if week > mw > 0:
+            hint = f'\n💡 当前第{week}周已超过课表最大第{mw}周,学期可能已结束'
+        lines.append(f'🟢 {campus_name} 今天没有课,可以休息!{hint}')
+        return '\n'.join(lines)
+
+    bigs = sorted(set(r['big'] for r in results))
+    big_count = len(bigs)
+    small_count = len(results)
+    lines.append(f'🏫 {campus_name} · 共 {big_count} 大节（{small_count} 小节）')
+    lines.append('')
+
+    by_big = {}
+    for r in results:
+        by_big.setdefault(r['big'], []).append(r)
+
+    for b in sorted(by_big):
+        entries = by_big[b]
+        label = BIG_SECTION_LABELS.get(b, f'大节{b}')
+        for j, r in enumerate(entries):
+            if j > 0:
+                lines.append('')  # 同大节内多门课(罕见)之间空行
+            lines.append(f'**{label} {r["time"]}**')
+            lines.append(str(r['course'] or ''))
+            lines.append(str(r['room'] or ''))
+            lines.append(truncate_teacher(r.get('teacher', '')))
+        lines.append('')
+
+    dc = day_credit_sum(results)
+    if ttl > 0:
+        pct = dc / ttl * 100
+        lines.append(f'🎓 今日学分 {dc:g} / 学期总学分 {ttl:g} ({pct:.1f}%)')
+    return '\n'.join(lines)
+
+
 def fmt_day_cards(week, day, results, today, schedule, campus, ttl):
     """三行一列×n: 每大节一张卡片,纵向堆叠;每卡片三行(课程名/教室/教师)"""
     term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
@@ -477,6 +521,58 @@ def fmt_day_cards(week, day, results, today, schedule, campus, ttl):
 
 
 # ── 单周网格布局(七列×五行) ──────────────────────────────────
+
+def fmt_week_grid_md(week, results_by_day, schedule, campus, ttl):
+    """单周 markdown 表格: 七列(周一~周日)×五行(五大节),每格三行用 <br>,教室加粗"""
+    term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
+    campus_name = CAMPUS_CN.get(campus, '')
+    lines = [f'📅 {term} · 第{week}周课表', f'🏫 {campus_name}', '']
+
+    # 构建 5×7 网格内容(与 ASCII 版共用逻辑)
+    grid = [[[] for _ in range(7)] for _ in range(5)]
+    for day in range(1, 8):
+        for r in results_by_day.get(day, []):
+            b = r['big']
+            if 1 <= b <= 5 and not grid[b - 1][day - 1]:
+                grid[b - 1][day - 1] = [
+                    str(r['course'] or ''),
+                    bold_md(str(r['room'] or '')),
+                    truncate_teacher(r.get('teacher', '')),
+                ]
+            elif 1 <= b <= 5 and grid[b - 1][day - 1]:
+                cell = grid[b - 1][day - 1]
+                cell[0] += '/' + str(r['course'] or '')
+                room = str(r['room'] or '')
+                if room and not room in cell[1].replace('**', ''):
+                    cell[1] = bold_md(cell[1].replace('**', '') + '/' + room)
+
+    # markdown 表格
+    headers = ['节次'] + WEEKDAY_CN[:7]
+    lines.append('| ' + ' | '.join(headers) + ' |')
+    lines.append('|' + '---|' * 8)
+    for bi in range(5):
+        label = BIG_SECTION_LABELS.get(bi + 1, '')
+        cells = [label]
+        for di in range(7):
+            cell = grid[bi][di]
+            if cell:
+                cells.append('<br>'.join(cell))
+            else:
+                cells.append('')
+        lines.append('| ' + ' | '.join(cells) + ' |')
+
+    # 统计
+    big_set = set()
+    small_count = 0
+    for day in range(1, 8):
+        for r in results_by_day.get(day, []):
+            big_set.add((day, r['big']))
+            small_count += 1
+    lines.append(f'\n📊 本周共 {len(big_set)} 大节（{small_count} 小节）')
+    if ttl > 0:
+        lines.append(f'🎓 学期总学分: {ttl:g}')
+    return '\n'.join(lines)
+
 
 def fmt_week_grid(week, results_by_day, schedule, campus, ttl):
     """七列(周一~周日)×五行(五大节)网格,每格三行(课程/教室/教师)"""
@@ -595,6 +691,8 @@ def main():
     ap.add_argument('--week', type=int, default=None, help='第几周')
     ap.add_argument('--day', type=int, default=None, help='星期几 1-7')
     ap.add_argument('--list', action='store_true', help='列出全部课程(旧表格格式)')
+    ap.add_argument('--markdown', action='store_true',
+                    help='输出 markdown 表格(供 Agent 原样展示;终端默认 ASCII)')
     args = ap.parse_args()
 
     config_path = args.config
@@ -698,12 +796,18 @@ def main():
         results_by_day = {}
         for d in range(1, 8):
             results_by_day[d] = query(cfg, campus, schedule, week, d, custom)
-        print(fmt_week_grid(week, results_by_day, schedule, campus, ttl))
+        if args.markdown:
+            print(fmt_week_grid_md(week, results_by_day, schedule, campus, ttl))
+        else:
+            print(fmt_week_grid(week, results_by_day, schedule, campus, ttl))
         return
 
     # ── 单日卡片模式 ──
     results = query(cfg, campus, schedule, week, day, custom)
-    print(fmt_day_cards(week, day, results, today, schedule, campus, ttl))
+    if args.markdown:
+        print(fmt_day_cards_md(week, day, results, today, schedule, campus, ttl))
+    else:
+        print(fmt_day_cards(week, day, results, today, schedule, campus, ttl))
 
 
 if __name__ == '__main__':
