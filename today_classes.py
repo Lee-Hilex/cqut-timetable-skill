@@ -523,7 +523,7 @@ def fmt_day_cards(week, day, results, today, schedule, campus, ttl):
 # ── 单周网格布局(七列×五行) ──────────────────────────────────
 
 def fmt_week_grid_md(week, results_by_day, schedule, campus, ttl):
-    """单周 markdown 表格: 七列(周一~周日)×五行(五大节),每格三行用 <br>,教室加粗"""
+    """单周 markdown 表格: 七列(周一~周日),每个大节占三行(课程名/教室/教师),教室加粗。不用 <br>(raw HTML 会被转义)"""
     term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
     campus_name = CAMPUS_CN.get(campus, '')
     lines = [f'📅 {term} · 第{week}周课表', f'🏫 {campus_name}', '']
@@ -546,20 +546,18 @@ def fmt_week_grid_md(week, results_by_day, schedule, campus, ttl):
                 if room and not room in cell[1].replace('**', ''):
                     cell[1] = bold_md(cell[1].replace('**', '') + '/' + room)
 
-    # markdown 表格
+    # markdown 表格: 每个大节占三行(课程名/教室/教师),教室加粗
     headers = ['节次'] + WEEKDAY_CN[:7]
     lines.append('| ' + ' | '.join(headers) + ' |')
     lines.append('|' + '---|' * 8)
     for bi in range(5):
         label = BIG_SECTION_LABELS.get(bi + 1, '')
-        cells = [label]
-        for di in range(7):
-            cell = grid[bi][di]
-            if cell:
-                cells.append('<br>'.join(cell))
-            else:
-                cells.append('')
-        lines.append('| ' + ' | '.join(cells) + ' |')
+        for sub in range(3):  # 0=课程名, 1=教室, 2=教师
+            cells = [label if sub == 0 else '']
+            for di in range(7):
+                cell = grid[bi][di]
+                cells.append(cell[sub] if len(cell) > sub else '')
+            lines.append('| ' + ' | '.join(cells) + ' |')
 
     # 统计
     big_set = set()

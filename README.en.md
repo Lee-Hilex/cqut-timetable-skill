@@ -75,7 +75,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
   Each big section outputs three lines (course name / room / teacher), stacked top to bottom.
 
-- **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) × 5-row (big sections) grid, with course/room/teacher at a glance
+- **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) table, each big section occupying 3 rows (course / room / teacher) at a glance
 
   ```text
   $ python today_classes.py --week 3
@@ -90,7 +90,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
   📊 This week: 11 big sections (11 sub-sessions)
   ```
 
-  The week grid is 7 columns (Mon–Sun) × 5 rows (big sections); each cell has three lines (course / room / teacher) with the **room in bold**.
+  The week grid is 7 columns (Mon–Sun); each big section occupies 3 rows (course / room / teacher) with the **room in bold**.
 
 - **✏️ Custom courses (v1.2.0)** — add self-study, electives, etc. in `custom_courses.json`; auto-merged into schedule on query
 
@@ -265,7 +265,7 @@ Teacher Wang
 🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
 ```
 
-> For a full-week schedule, the Agent likewise **shows the `--markdown` 7-column × 5-row markdown table verbatim** (rooms already bolded with `**`, rendered as bold).
+> For a full-week schedule, the Agent likewise **shows the `--markdown` 7-column table verbatim** (each big section in 3 rows, rooms already bolded with `**`, rendered as bold).
 
 ## 📦 Project Structure
 
