@@ -16,7 +16,7 @@
 [反馈问题](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [更新日志](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
 [快速开始](#快速开始) · [技术原理](#-技术原理) · [免责声明](#-免责声明)
 
-[![Version](https://img.shields.io/badge/version-1.1.2-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/Lee-Hilex/cqut-timetable-skill?color=ffcb47&labelColor=black)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
@@ -54,17 +54,48 @@
 - **📅 智能查询** — 自动算今天是第几周,回答"今天/明天/某周周X 有什么课",带学分统计
 
   ```text
-  $ python today_classes.py --date 2026-09-23
-  📚 2026-2027 学年第1学期 · 第3周 周三
-  ┌─────────────┬───────┬───────────┬────────┬──────┬─────────┐
-  │ 时间        │ 节次  │ 课程      │ 教师   │ 学分 │ 地点    │
-  ├─────────────┼───────┼───────────┼────────┼──────┼─────────┤
-  │ 10:20-12:00 │ 3-4节 │ 示例课程B │ 李老师 │ 2    │ 2教0202 │
-  └─────────────┴───────┴───────────┴────────┴──────┴─────────┘
-  🏫 花溪校区 · 共 1 门课
-  🎓 今日学分 2 / 学期总学分 7.5 (26.7%)
+  $ python today_classes.py --date 2026-09-18
+  📚 2026-2027 学年第1学期 · 第3周 周五 (2026-09-18)
+  🏫 花溪校区 · 共 2 大节（2 小节）
+
+  ┌──────────────────────┐
+  │  1-2节  08:20-10:00  │
+  │  物理化学（1）        │
+  │  1教0516             │
+  │  周文姣…             │
+  ├──────────────────────┤
+  │  5-6节  14:00-15:40  │
+  │  有机化学             │
+  │  3教0405             │
+  │  周德文…             │
+  └──────────────────────┘
+
+  🎓 今日学分 6.5 / 学期总学分 18.75 (34.7%)
   ```
 
+- **🗓️ 整周网格视图** — `--week 3` 七列(周一~日)×五行(五大节)网格,课程/教室/教师一目了然
+
+  ```text
+  $ python today_classes.py --week 3
+  📅 2026-2027 学年第1学期 · 第3周课表
+  ┌──────┬────────┬────────┬────────┬────────┬────────┬──────┬──────┐
+  │      │  周一  │  周二  │  周三  │  周四  │  周五  │  周六  │  周日  │
+  │ 1-2节│        │社会主义 │有机化学 │        │物理化学 │        │      │
+  │      │        │1教0708 │3教0603 │        │1教0516 │        │      │
+  │      │        │胡春霞  │周德文… │        │周文姣… │        │      │
+  ├──────┼────────┼────────┼────────┼────────┼────────┼──────┼──────┤
+  …(共 5 大节行)
+  📊 本周共 11 大节（11 小节）
+  ```
+
+- **✏️ 自定义课程(v1.2.0)** — 在 `custom_courses.json` 中添加自习、选修等,查询时自动合并到课表
+
+  ```json
+  [{"title":"自习课","teacher":"无","weekday":3,"weeks":"2-16周","sessions":"7-8节","room":"图书馆301","credit":0}]
+  ```
+
+- **🎯 大节计数(v1.2.0)** — 大学两节连堂:1-2节→第1大节,…,提问"有几节课"回答大节数(附小节数)
+- **👥 多教师省略号(v1.2.0)** — 多位教师(如 `周文姣,胡学步`)只显示第一个+`…`
 - **🔄 单双周 + 多段周次** — 正确解析 `15-19周(单)`、`10-16周(双)`、`4-6周,9-12周,14-18周`
 - **⏱️ 第一周不完整兼容** — 开学日在周中时按自然周对齐,第一周不足 7 天也正确
 - **⏰ 时间段显示** — 时间列显示上课时间段(如 `10:20-12:00`),跨节取起止,不再只是时间点
@@ -82,7 +113,7 @@
 
 | 方式 | 说明 |
 |------|------|
-| **zip 包(推荐)** | [cqut-timetable-skill-1.1.2.zip](dist/cqut-timetable-skill-1.1.2.zip) — 解压即用,含全部 9 个文件 |
+| **zip 包(推荐)** | [cqut-timetable-skill-1.2.0.zip](dist/cqut-timetable-skill-1.2.0.zip) — 解压即用,含全部 11 个文件 |
 | **GitHub Releases** | [Releases 页](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) 下载对应版本源码包 |
 | **Git 克隆** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
@@ -176,18 +207,23 @@ python fetch_schedule_browser.py --year 2026 --term 1
 ### 4. 查询课表
 
 ```bash
-# 今天有什么课
+# 第3周全周课表(网格视图,v1.2.0 新增)
+python today_classes.py --week 3
+
+# 今天有什么课(默认单日卡片)
 python today_classes.py
 
 # 指定日期
-python today_classes.py --date 2026-09-23
+python today_classes.py --date 2026-09-18
 
 # 第15周周四
 python today_classes.py --week 15 --day 4
 
-# 列出全部课程
+# 列出全部课程(旧表格格式)
 python today_classes.py --list
 ```
+
+> ✏️ **自定义课程**(v1.2.0): 参考 `custom_courses.example.json` 创建 `custom_courses.json`,查询时自动合并到课表。
 
 ## 🤖 作为 Skill 使用(Reasonix / Agent)
 
@@ -204,26 +240,34 @@ python today_classes.py --list
 > **你**: 今天有什么课?
 >
 > **Agent**:
-> 📚 2026-2027 学年第1学期 · 第3周 周三
-> ┌─────────────┬───────┬───────────┬────────┬──────┬─────────┐
-> │ 时间        │ 节次  │ 课程      │ 教师   │ 学分 │ 地点    │
-> ├─────────────┼───────┼───────────┼────────┼──────┼─────────┤
-> │ 10:20-12:00 │ 3-4节 │ 示例课程B │ 李老师 │ 2    │ 2教0202 │
-> └─────────────┴───────┴───────────┴────────┴──────┴─────────┘
-> 🏫 花溪校区 · 共 1 门课
-> 🎓 今日学分 2 / 学期总学分 7.5 (26.7%)
+> 📚 2026-2027 学年第1学期 · 第3周 周五
+> 🏫 花溪校区 · 共 2 大节（2 小节）
+>
+> ┌──────────────────────┐
+> │  1-2节  08:20-10:00  │
+> │  物理化学（1）        │
+> │  1教0516             │
+> │  周文姣…              │
+> ├──────────────────────┤
+> │  5-6节  14:00-15:40  │
+> │  有机化学             │
+> │  3教0405             │
+> │  周德文…              │
+> └──────────────────────┘
+> 🎓 今日学分 6.5 / 学期总学分 18.75 (34.7%)
 
 ## 📦 项目结构
 
 ```
 cqut-timetable-skill/
-├── check_deps.py                # 环境依赖检查脚本: 缺失自动下载安装
-├── fetch_schedule_browser.py   # 抓取脚本: UIS 登录 → SSO → 教务会话 → 课表接口 → 开学日期检测
-├── today_classes.py            # 查询工具: 算周次 + 单双周解析 + 学分统计 + 表格输出(零依赖)
-├── config.example.json         # 配置模板(学号/密码/校区/作息时间)
-├── sample_schedule.json        # 示例课表(脱敏,演示用)
-├── SKILL.md                    # Skill 定义(供 Agent 加载)
-└── .gitignore                  # 忽略真实 config.json 与真实课表(含个人信息)
+├── check_deps.py                 # 环境依赖检查脚本: 缺失自动下载安装
+├── fetch_schedule_browser.py    # 抓取脚本: UIS 登录 → SSO → 教务会话 → 课表接口 → 开学日期检测
+├── today_classes.py             # 查询工具: 大节映射 + 单双周解析 + 学分统计 + 卡片/网格输出(零依赖)
+├── config.example.json          # 配置模板(学号/密码/校区/作息时间)
+├── custom_courses.example.json  # 自定义课程示例(自习/选修等,v1.2.0)
+├── sample_schedule.json         # 示例课表(脱敏,演示用)
+├── SKILL.md                     # Skill 定义(供 Agent 加载)
+└── .gitignore                   # 忽略真实 config.json / custom_courses.json / 真实课表(含个人信息)
 ```
 
 ## 🧠 技术原理

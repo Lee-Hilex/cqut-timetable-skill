@@ -16,7 +16,7 @@ Powered by Python + Playwright (real browser to bypass SSO / RS-WAF)
 [Issues](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [Changelog](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
 [Quick Start](#quick-start) · [How It Works](#-how-it-works) · [Disclaimer](#-disclaimer)
 
-[![Version](https://img.shields.io/badge/version-1.1.2-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/Lee-Hilex/cqut-timetable-skill?color=ffcb47&labelColor=black)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
@@ -54,17 +54,48 @@ Tired of opening the academic portal, typing your student ID and password, and f
 - **📅 Smart querying** — auto-calculates the current academic week; ask "today / tomorrow / week X day Y" with credit stats
 
   ```text
-  $ python today_classes.py --date 2026-09-23
-  📚 2026-2027 AY Semester 1 · Week 3 Wednesday
-  ┌─────────────┬───────┬───────────┬────────┬───────┬─────────┐
-  │ Time        │ Sess  │ Course    │ Teacher│ Credit│ Room    │
-  ├─────────────┼───────┼───────────┼────────┼───────┼─────────┤
-  │ 10:20-12:00 │ 3-4   │ Sample B  │ Mr. Li │ 2     │ 2-0202  │
-  └─────────────┴───────┴───────────┴────────┴───────┴─────────┘
-  🏫 Huaxi Campus · 1 course
-  🎓 Today: 2 credits / Total: 7.5 (26.7%)
+  $ python today_classes.py --date 2026-09-18
+  📚 2026-2027 AY Semester 1 · Week 3 Friday (2026-09-18)
+  🏫 Huaxi Campus · 2 big sections (2 sub-sessions)
+
+  ┌──────────────────────┐
+  │  1-2   08:20-10:00   │
+  │  Physical Chemistry  │
+  │  1-0516              │
+  │  Zhou W…             │
+  ├──────────────────────┤
+  │  5-6   14:00-15:40   │
+  │  Organic Chemistry   │
+  │  3-0405              │
+  │  Zhou D…             │
+  └──────────────────────┘
+
+  🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
   ```
 
+- **🗓️ Week grid view** — `--week 3` shows a 7-column (Mon–Sun) × 5-row (big sections) grid, with course/room/teacher at a glance
+
+  ```text
+  $ python today_classes.py --week 3
+  📅 2026-2027 AY Semester 1 · Week 3
+  ┌──────┬────────┬────────┬────────┬────────┬────────┬──────┬──────┐
+  │      │  Mon   │  Tue   │  Wed   │  Thu   │  Fri   │  Sat  │  Sun  │
+  │ 1-2  │        │Socialism│OrgChem │        │PhyChem │        │      │
+  │      │        │1-0708  │3-0603  │        │1-0516  │        │      │
+  │      │        │Hu CX   │Zhou D… │        │Zhou W… │        │      │
+  ├──────┼────────┼────────┼────────┼────────┼────────┼──────┼──────┤
+  …(5 big-section rows total)
+  📊 This week: 11 big sections (11 sub-sessions)
+  ```
+
+- **✏️ Custom courses (v1.2.0)** — add self-study, electives, etc. in `custom_courses.json`; auto-merged into schedule on query
+
+  ```json
+  [{"title":"Self-study","teacher":"N/A","weekday":3,"weeks":"2-16w","sessions":"7-8","room":"Library 301","credit":0}]
+  ```
+
+- **🎯 Big-section counting (v1.2.0)** — consecutive sessions form "big sections" (1-2→1st, 3-4→2nd, … 5 total); "how many classes" answers in big sections (+ sub-sessions)
+- **👥 Teacher truncation (v1.2.0)** — multiple teachers (e.g. `Zhou W, Hu X`) shown as first name + `…`
 - **🔄 Odd/even & multi-range weeks** — correctly parses `15-19w(odd)`, `10-16w(even)`, `4-6w,9-12w,14-18w`
 - **⏱️ Partial first week** — semester starting mid-week is handled correctly with natural week alignment
 - **⏰ Time range display** — time column shows full range (e.g. `10:20-12:00`) with start-to-end for multi-session blocks, not just start time
@@ -82,7 +113,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
 | Method | Instructions |
 |--------|-------------|
-| **Zip (recommended)** | [cqut-timetable-skill-1.1.2.zip](dist/cqut-timetable-skill-1.1.2.zip) — unzip and use; contains all 9 files |
+| **Zip (recommended)** | [cqut-timetable-skill-1.2.0.zip](dist/cqut-timetable-skill-1.2.0.zip) — unzip and use; contains all 11 files |
 | **GitHub Releases** | Download source archives from the [Releases page](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) |
 | **Git clone** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
@@ -221,9 +252,10 @@ cqut-timetable-skill/
 ├── fetch_schedule_browser.py    # Fetch script: UIS login → SSO → academic session → schedule API → semester start detection
 ├── today_classes.py             # Query tool: week calc + odd/even parser + credit stats + table output (zero deps)
 ├── config.example.json          # Configuration template (ID / password / campus / bell schedule)
+├── custom_courses.example.json  # Custom course template (self-study, electives; v1.2.0)
 ├── sample_schedule.json         # Sample schedule data (anonymized, for demo)
 ├── SKILL.md                     # Skill definition (loaded by Agent)
-└── .gitignore                   # Ignores real config.json & real schedule (contains PII)
+└── .gitignore                   # Ignores config.json / custom_courses.json / real schedule (contains PII)
 ```
 
 ## 🧠 How It Works
