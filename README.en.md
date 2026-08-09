@@ -16,7 +16,7 @@ Powered by Python + Playwright (real browser to bypass SSO / RS-WAF)
 [Issues](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [Changelog](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
 [Quick Start](#quick-start) · [How It Works](#-how-it-works) · [Disclaimer](#-disclaimer)
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/Lee-Hilex/cqut-timetable-skill?color=ffcb47&labelColor=black)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
@@ -113,7 +113,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
 | Method | Instructions |
 |--------|-------------|
-| **Zip (recommended)** | [cqut-timetable-skill-1.2.0.zip](dist/cqut-timetable-skill-1.2.0.zip) — unzip and use; contains all 11 files |
+| **Zip (recommended)** | [cqut-timetable-skill-1.2.1.zip](dist/cqut-timetable-skill-1.2.1.zip) — unzip and use; contains all 11 files |
 | **GitHub Releases** | Download source archives from the [Releases page](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) |
 | **Git clone** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 

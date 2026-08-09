@@ -29,7 +29,10 @@ import re
 import sys
 import unicodedata
 
-sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -654,6 +657,9 @@ def main():
 
     # ── 计算目标日期/周次 ──
     week_mode = False  # True = 整周网格, False = 单日卡片
+    if args.day and not args.week:
+        print('错误: --day 需要配合 --week 一起使用。例如 --week 3 --day 2')
+        sys.exit(1)
     if args.week and args.day:
         week, day = args.week, args.day
         today = None
@@ -670,7 +676,7 @@ def main():
         week = get_week(today, semester_start)
         day = today.isoweekday()
 
-    if not week_mode and week <= 0:
+    if week <= 0:
         start = datetime.date.fromisoformat(semester_start)
         print(f'📅 还没开学(学期开始: {start}),当前周次为 0')
         print('课程从开学后第 1 周开始。')

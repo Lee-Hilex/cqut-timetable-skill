@@ -18,7 +18,10 @@ import json
 import os
 import sys
 
-sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
 from playwright.sync_api import sync_playwright
 
