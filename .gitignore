@@ -1,5 +1,6 @@
 # 忽略真实配置(含学号密码)与真实课表(含个人信息)
 config.json
+custom_courses.json
 schedule_*.json
 __pycache__/
 *.pyc

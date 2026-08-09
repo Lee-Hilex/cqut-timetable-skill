@@ -1,0 +1,20 @@
+[
+  {
+    "title": "自习课",
+    "teacher": "无",
+    "weekday": 3,
+    "weeks": "2-16周",
+    "sessions": "7-8节",
+    "room": "图书馆301",
+    "credit": 0
+  },
+  {
+    "title": "Python编程",
+    "teacher": "王老师,李助教",
+    "weekday": 5,
+    "weeks": "3-18周",
+    "sessions": "3-4节",
+    "room": "机房B",
+    "credit": 3
+  }
+]

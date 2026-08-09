@@ -1,14 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-课表查询工具: 根据当前日期(或指定日期)计算周次,列出当天的课。
+课表查询工具 v1.2.0
+根据当前日期(或指定日期)计算周次,列出当天的课。
+
+新增(v1.2.0): 大节概念(1-2节→第1大节)、自定义课程(custom_courses.json)、
+            单日卡片布局、单周七列×五行网格、多教师省略号
 
 用法:
   python today_classes.py                 # 今天有什么课
   python today_classes.py --date 2026-09-14   # 指定日期
   python today_classes.py --week 3 --day 2    # 第3周周二(1=周一)
+  python today_classes.py --week 3              # 第3周全周课表(网格)
+  python today_classes.py --week 3 --day 2       # 第3周周二(1=周一,日卡片)
   python today_classes.py --config config.json
   python today_classes.py --schedule schedule_2026_1.json
-  python today_classes.py --list              # 列出全部课程(按星期)
+  python today_classes.py --list                 # 列出全部课程(按星期)
+
+自定义课程: 在脚本同目录创建 custom_courses.json,格式见 README。
 
 校区说明: config.json 的 campus 字段为 huaxi(花溪) 或 liangjiang(两江),
           class_time 为按校区分组的作息时间表。首次使用会交互询问校区。
@@ -30,6 +38,9 @@ CAMPUS_CN = {'huaxi': '花溪校区', 'liangjiang': '两江校区'}
 
 # 兼容旧配置: 若 class_time 是数组(非 dict),按花溪处理
 DEFAULT_CAMPUS = 'huaxi'
+
+# 大节标签: 两个小节组成一个大节,一天最多五个大节
+BIG_SECTION_LABELS = {1: '1-2节', 2: '3-4节', 3: '5-6节', 4: '7-8节', 5: '9-10节'}
 
 
 def load_json(path):
@@ -196,6 +207,44 @@ def parse_session(course_section):
     return 0, 0
 
 
+def section_to_big(s, e):
+    """将节次范围映射为大节编号(1-5)。
+    1-2节→1, 3-4节→2, 5-6节→3, 7-8节→4, 9+→5
+    """
+    if not s:
+        return 0
+    avg = (s + e) // 2
+    if avg <= 2:
+        return 1
+    if avg <= 4:
+        return 2
+    if avg <= 6:
+        return 3
+    if avg <= 8:
+        return 4
+    return 5
+
+
+def truncate_teacher(teacher_str):
+    """多个教师(逗号/顿号分隔)时只显示第一个,后跟 …"""
+    if not teacher_str:
+        return ''
+    teachers = [t.strip() for t in re.split(r'[,，、]', teacher_str) if t.strip()]
+    return teachers[0] if len(teachers) <= 1 else teachers[0] + '…'
+
+
+def load_custom_courses():
+    """加载 custom_courses.json(脚本同目录),返回课程列表或 []"""
+    custom_path = os.path.join(BASE_DIR, 'custom_courses.json')
+    if not os.path.exists(custom_path):
+        return []
+    try:
+        courses = load_json(custom_path)
+        return courses if isinstance(courses, list) else []
+    except Exception:
+        return []
+
+
 def get_class_time(cfg, campus, start_session, end_session=None):
     """根据校区+节次范围查上课时间段,返回如 '08:20-09:05'"""
     ct = cfg.get('class_time')
@@ -213,9 +262,10 @@ def get_class_time(cfg, campus, start_session, end_session=None):
     return '?'
 
 
-def query(cfg, campus, schedule, week, day):
-    """查询第 week 周星期 day(1-7) 的课程,按节次排序"""
+def query(cfg, campus, schedule, week, day, custom=None):
+    """查询第 week 周星期 day(1-7) 的课程(含自定义课程),按节次排序"""
     results = []
+    # 教务课表
     for c in schedule.get('courses', []):
         try:
             wd = int(c.get('weekday'))
@@ -230,8 +280,8 @@ def query(cfg, campus, schedule, week, day):
                 'course': c.get('courseTitle'),
                 'teacher': c.get('teacher'),
                 'sessions': c.get('courseSection'),
-                'sessionStart': s,
-                'sessionEnd': e,
+                'sessionStart': s, 'sessionEnd': e,
+                'big': section_to_big(s, e),
                 'time': get_class_time(cfg, campus, s, e),
                 'weeks': c.get('courseWeek'),
                 'room': c.get('courseRoom'),
@@ -240,17 +290,45 @@ def query(cfg, campus, schedule, week, day):
                 'courseId': c.get('courseId'),
                 'courseTitle': c.get('courseTitle'),
             })
+    # 自定义课程
+    for c in (custom or []):
+        try:
+            wd = int(c.get('weekday'))
+        except (TypeError, ValueError):
+            continue
+        if wd != day:
+            continue
+        wks = parse_weeks(c.get('weeks'))
+        if week not in wks:
+            continue
+        s, e = parse_session(c.get('sessions'))
+        title = c.get('title', '')
+        results.append({
+            'course': title,
+            'teacher': c.get('teacher', ''),
+            'sessions': c.get('sessions', ''),
+            'sessionStart': s, 'sessionEnd': e,
+            'big': section_to_big(s, e),
+            'time': get_class_time(cfg, campus, s, e),
+            'weeks': c.get('weeks', ''),
+            'room': c.get('room', ''),
+            'campus': campus,
+            'credit': c.get('credit'),
+            'courseId': 'custom_' + title,
+            'courseTitle': title,
+            'custom': True,
+        })
     results.sort(key=lambda x: x['sessionStart'])
     return results
 
 
 def _course_key(c):
     """课程去重键: 优先 courseId, fallback 为 courseTitle"""
-    return c.get('courseId','') or c.get('courseTitle','')
+    return c.get('courseId', '') or c.get('courseTitle', '')
 
 
-def total_credit(schedule):
-    """学期总学分(按课程去重求和)"""
+def total_credit(schedule, custom=None):
+    """学期总学分(按课程去重求和,含自定义课程)"""
     seen = set()
     total = 0.0
     for c in schedule.get('courses', []):
@@ -261,8 +339,207 @@ def total_credit(schedule):
                 total += float(c.get('credit') or 0)
             except (TypeError, ValueError):
                 pass
+    for c in (custom or []):
+        kid = 'custom_' + c.get('title', '')
+        if kid and kid not in seen:
+            seen.add(kid)
+            try:
+                total += float(c.get('credit') or 0)
+            except (TypeError, ValueError):
+                pass
     return total
 
+
+def day_credit_sum(results):
+    """当日学分(去重)"""
+    seen = set()
+    total = 0.0
+    for r in results:
+        kid = _course_key(r)
+        if kid and kid not in seen:
+            seen.add(kid)
+            try:
+                total += float(r.get('credit') or 0)
+            except (TypeError, ValueError):
+                pass
+    return total
+
+
+def _schedule_max_week(schedule, custom=None):
+    """课表最大周次(含自定义)"""
+    mw = 0
+    for c in schedule.get('courses', []):
+        w = parse_weeks(c.get('courseWeek'))
+        if w:
+            mw = max(mw, max(w))
+    for c in (custom or []):
+        w = parse_weeks(c.get('weeks'))
+        if w:
+            mw = max(mw, max(w))
+    return mw
+
+
+# ── 单日卡片布局(纵向堆叠) ──────────────────────────────────
+
+def fmt_day_cards(week, day, results, today, schedule, campus, ttl):
+    """三行一列×n: 每大节一张卡片,纵向堆叠;每卡片三行(课程名/教室/教师)"""
+    term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
+    date_str = f" ({today.isoformat()})" if today else ''
+    campus_name = CAMPUS_CN.get(campus, '')
+    header = f'📚 {term} · 第{week}周 {WEEKDAY_CN[day - 1]}{date_str}'
+    lines = [header]
+
+    if not results:
+        hint = ''
+        mw = _schedule_max_week(schedule)
+        if week > mw > 0:
+            hint = f'\n💡 当前第{week}周已超过课表最大第{mw}周,学期可能已结束'
+        lines.append(f'🟢 {campus_name} 今天没有课,可以休息!{hint}')
+        return '\n'.join(lines)
+
+    # 大节/小节计数
+    bigs = sorted(set(r['big'] for r in results))
+    big_count = len(bigs)
+    small_count = len(results)
+    lines.append(f'🏫 {campus_name} · 共 {big_count} 大节（{small_count} 小节）')
+    lines.append('')
+
+    # 计算卡片宽度
+    max_w = 4
+    for r in results:
+        for field in ['course', 'room']:
+            w = disp_width(str(r.get(field, '') or ''))
+            if w > max_w:
+                max_w = w
+        w = disp_width(truncate_teacher(r.get('teacher', '')))
+        if w > max_w:
+            max_w = w
+        w = disp_width(f"{BIG_SECTION_LABELS.get(r['big'], '')}  {r['time']}")
+        if w > max_w:
+            max_w = w
+    card_width = max_w + 6  # padding + borders
+
+    sep_top = '┌' + '─' * (card_width - 2) + '┐'
+    sep_mid = '├' + '─' * (card_width - 2) + '┤'
+    sep_bot = '└' + '─' * (card_width - 2) + '┘'
+
+    # 按大节分组,同一大节内可能有多门课(罕见)
+    by_big = {}
+    for r in results:
+        by_big.setdefault(r['big'], []).append(r)
+
+    first = True
+    for b in sorted(by_big):
+        entries = by_big[b]
+        label = BIG_SECTION_LABELS.get(b, f'大节{b}')
+        # 大节分隔
+        if first:
+            lines.append(sep_top)
+            first = False
+        else:
+            lines.append(sep_mid)
+
+        for j, r in enumerate(entries):
+            if j > 0:
+                lines.append('│' + ' ' * (card_width - 2) + '│')  # 同大节内课程间空行
+            # 标题行: 大节标签 + 时间
+            title_line = f"  {label}  {r['time']}"
+            lines.append('│' + pad(title_line, card_width - 2) + '│')
+            # 课程名
+            lines.append('│' + pad('  ' + str(r['course'] or ''), card_width - 2) + '│')
+            # 教室
+            lines.append('│' + pad('  ' + str(r['room'] or ''), card_width - 2) + '│')
+            # 教师(多个时截断)
+            lines.append('│' + pad('  ' + truncate_teacher(r.get('teacher', '')), card_width - 2) + '│')
+
+    lines.append(sep_bot)
+    lines.append('')
+
+    # 学分统计
+    dc = day_credit_sum(results)
+    if ttl > 0:
+        pct = dc / ttl * 100
+        lines.append(f'🎓 今日学分 {dc:g} / 学期总学分 {ttl:g} ({pct:.1f}%)')
+    return '\n'.join(lines)
+
+
+# ── 单周网格布局(七列×五行) ──────────────────────────────────
+
+def fmt_week_grid(week, results_by_day, schedule, campus, ttl):
+    """七列(周一~周日)×五行(五大节)网格,每格三行(课程/教室/教师)"""
+    term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
+    campus_name = CAMPUS_CN.get(campus, '')
+    lines = [f'📅 {term} · 第{week}周课表', f'🏫 {campus_name}', '']
+
+    # 构建 5×7 网格内容
+    grid = [[[] for _ in range(7)] for _ in range(5)]
+    for day in range(1, 8):
+        for r in results_by_day.get(day, []):
+            b = r['big']
+            if 1 <= b <= 5 and not grid[b - 1][day - 1]:
+                grid[b - 1][day - 1] = [
+                    str(r['course'] or ''),
+                    str(r['room'] or ''),
+                    truncate_teacher(r.get('teacher', '')),
+                ]
+            elif 1 <= b <= 5 and grid[b - 1][day - 1]:
+                # 同大节第二门课: 追加到已有格(罕见)
+                cell = grid[b - 1][day - 1]
+                cell[0] += '/' + str(r['course'] or '')
+                if str(r['room'] or '') not in cell[1]:
+                    cell[1] += '/' + str(r['room'] or '')
+
+    # 计算列宽
+    label_width = 6
+    day_widths = [8] * 7
+    for bi in range(5):
+        for di in range(7):
+            cell = grid[bi][di]
+            for line in cell:
+                w = disp_width(line)
+                if w > day_widths[di]:
+                    day_widths[di] = w
+    day_widths = [max(w, 8) for w in day_widths]
+    col_widths = [label_width] + day_widths
+
+    def _row(cells):
+        return '│' + '│'.join(pad(c, w) for c, w in zip(cells, col_widths)) + '│'
+
+    # 表头行
+    sep_top = '┌' + '┬'.join('─' * w for w in col_widths) + '┐'
+    lines.append(sep_top)
+    lines.append(_row([''] + WEEKDAY_CN[:7]))
+
+    # 五大节
+    for bi in range(5):
+        sep = '├' + '┼'.join('─' * w for w in col_widths) + '┤'
+        if bi > 0:
+            lines.append(sep)
+        label = BIG_SECTION_LABELS.get(bi + 1, '')
+        for sub in range(3):  # 课程名/教室/教师
+            cells = [label if sub == 0 else '']
+            for di in range(7):
+                cell = grid[bi][di]
+                cells.append(cell[sub] if len(cell) > sub else '')
+            lines.append(_row(cells))
+
+    sep_bot = '└' + '┴'.join('─' * w for w in col_widths) + '┘'
+    lines.append(sep_bot)
+
+    # 统计
+    big_set = set()
+    small_count = 0
+    for day in range(1, 8):
+        for r in results_by_day.get(day, []):
+            big_set.add((day, r['big']))
+            small_count += 1
+    lines.append(f'\n📊 本周共 {len(big_set)} 大节（{small_count} 小节）')
+    if ttl > 0:
+        lines.append(f'🎓 学期总学分: {ttl:g}')
+    return '\n'.join(lines)
+
+
+# ── 旧格式(保留 --list 使用) ──────────────────────────────────
 
 def render_table(rows, campus):
     """渲染美观的表格(考虑中英文宽度对齐)"""
@@ -270,12 +547,10 @@ def render_table(rows, campus):
         return None
     headers = ['时间', '节次', '课程', '教师', '学分', '地点']
     cols = ['time', 'sessions', 'course', 'teacher', 'credit', 'room']
-    # 计算每列最大宽度
     widths = [disp_width(h) for h in headers]
     for r in rows:
         for i, c in enumerate(cols):
             widths[i] = max(widths[i], disp_width(str(r[c] or '')))
-    # 上限
     widths = [min(w, 28) for w in widths]
 
     sep = '┌' + '┬'.join('─' * (w + 2) for w in widths) + '┐'
@@ -289,50 +564,12 @@ def render_table(rows, campus):
         for i, c in enumerate(cols):
             v = str(r[c] or '')
             if disp_width(v) > widths[i]:
-                # 从右向左逐字符削减到宽度内,补 …
                 while disp_width(v) > widths[i] - 1 and len(v) > 1:
                     v = v[:-1]
                 v = v + '…'
             cells.append(' ' + pad(v, widths[i]) + ' ')
         lines.append('│' + '│'.join(cells) + '│')
     lines.append(foot)
-    return '\n'.join(lines)
-
-
-def fmt_result(week, day, results, today, schedule, campus):
-    term = f"{schedule.get('schoolYear')} 学年第{schedule.get('schoolTerm')}学期"
-    date_str = f"({today.isoformat()})" if today else ''
-    header = f'📚 {term} · 第{week}周 {WEEKDAY_CN[day-1]} {date_str}'
-    campus_name = CAMPUS_CN.get(campus, '')
-    table = render_table(results, campus)
-    if not table:
-        hint = ''
-        max_week = 0
-        for c in schedule.get('courses', []):
-            w = parse_weeks(c.get('weeks', ''))
-            if w:
-                max_week = max(max_week, max(w))
-        if week > max_week > 0:
-            hint = f'\n💡 当前第{week}周已超过课表最大第{max_week}周,学期可能已结束'
-        return f'{header}\n🟢 {campus_name} 今天没有课,可以休息!{hint}'
-    lines = [header, table]
-    if campus_name:
-        lines.append(f'🏫 {campus_name} · 共 {len(results)} 门课')
-    # 学分统计
-    seen_courses = set()
-    day_credit = 0.0
-    for r in results:
-        kid = _course_key(r)
-        if kid and kid not in seen_courses:
-            seen_courses.add(kid)
-            try:
-                day_credit += float(r.get('credit') or 0)
-            except (TypeError, ValueError):
-                pass
-    ttl = total_credit(schedule)
-    if ttl > 0:
-        pct = day_credit / ttl * 100
-        lines.append(f'🎓 今日学分 {day_credit:g} / 学期总学分 {ttl:g} ({pct:.1f}%)')
     return '\n'.join(lines)
 
 
@@ -343,7 +580,7 @@ def main():
     ap.add_argument('--date', default=None, help='YYYY-MM-DD,默认今天')
     ap.add_argument('--week', type=int, default=None, help='第几周')
     ap.add_argument('--day', type=int, default=None, help='星期几 1-7')
-    ap.add_argument('--list', action='store_true', help='列出全部课程')
+    ap.add_argument('--list', action='store_true', help='列出全部课程(旧表格格式)')
     args = ap.parse_args()
 
     config_path = args.config
@@ -367,40 +604,63 @@ def main():
               'fetch_schedule_browser.py 抓取课表,或用 --schedule 指定。')
         sys.exit(1)
 
-    # 开学日期: 有则校验,无则交互询问(在 schedule 载入后调用以显示学期提示)
+    # 开学日期
     semester_start = ensure_semester_start(cfg, config_path, schedule)
+    # 自定义课程
+    custom = load_custom_courses()
+    ttl = total_credit(schedule, custom)
 
+    # ── --list: 旧横向表格(全部课程) ──
     if args.list:
         print(f'📚 全部课程 ({schedule.get("name")} {schedule.get("className")} '
               f'{schedule.get("major")} · {schedule.get("schoolYear")} 学年第'
               f'{schedule.get("schoolTerm")}学期)')
-        ttl = total_credit(schedule)
+
+        if custom:
+            print(f'📝 含 {len(custom)} 门自定义课程')
+
         for d in range(1, 8):
             rows = [c for c in schedule.get('courses', [])
                     if str(c.get('weekday')) == str(d)]
+            for cc in custom:
+                if str(cc.get('weekday')) == str(d):
+                    rows.append({
+                        'courseTitle': cc.get('title'),
+                        'teacher': cc.get('teacher', ''),
+                        'courseSection': cc.get('sessions', ''),
+                        'courseWeek': cc.get('weeks', ''),
+                        'courseRoom': cc.get('room', ''),
+                        'campus': campus,
+                        'credit': cc.get('credit'),
+                    })
             if not rows:
                 continue
-            print(f'\n📅 {WEEKDAY_CN[d-1]}:')
+            print(f'\n📅 {WEEKDAY_CN[d - 1]}:')
             recs = []
-            for c in sorted(rows, key=lambda x: parse_session(x.get('courseSection'))[0]):
-                s, e = parse_session(c.get('courseSection'))
+            for c in sorted(rows, key=lambda x: parse_session(x.get('courseSection', ''))[0]):
+                s, e = parse_session(c.get('courseSection', ''))
                 recs.append({
                     'time': get_class_time(cfg, campus, s, e),
-                    'sessions': c.get('courseSection'),
+                    'sessions': c.get('courseSection', ''),
                     'course': c.get('courseTitle'),
                     'teacher': c.get('teacher'),
                     'credit': c.get('credit'),
-                    'room': f"{c.get('campus')} {c.get('courseRoom')}",
+                    'room': (f"{c.get('campus')} " if c.get('campus') else '') + (c.get('courseRoom') or ''),
                 })
             print(render_table(recs, campus))
         if ttl > 0:
             print(f'\n🎓 学期总学分: {ttl:g}')
         return
 
-    # 计算目标日期/周次
+    # ── 计算目标日期/周次 ──
+    week_mode = False  # True = 整周网格, False = 单日卡片
     if args.week and args.day:
         week, day = args.week, args.day
         today = None
+    elif args.week:
+        week = args.week
+        today = None
+        week_mode = True
     elif args.date:
         today = datetime.date.fromisoformat(args.date)
         week = get_week(today, semester_start)
@@ -410,14 +670,23 @@ def main():
         week = get_week(today, semester_start)
         day = today.isoweekday()
 
-    if week <= 0:
+    if not week_mode and week <= 0:
         start = datetime.date.fromisoformat(semester_start)
         print(f'📅 还没开学(学期开始: {start}),当前周次为 0')
         print('课程从开学后第 1 周开始。')
         return
 
-    results = query(cfg, campus, schedule, week, day)
-    print(fmt_result(week, day, results, today, schedule, campus))
+    # ── 整周网格模式 ──
+    if week_mode:
+        results_by_day = {}
+        for d in range(1, 8):
+            results_by_day[d] = query(cfg, campus, schedule, week, d, custom)
+        print(fmt_week_grid(week, results_by_day, schedule, campus, ttl))
+        return
+
+    # ── 单日卡片模式 ──
+    results = query(cfg, campus, schedule, week, day, custom)
+    print(fmt_day_cards(week, day, results, today, schedule, campus, ttl))
 
 
 if __name__ == '__main__':
