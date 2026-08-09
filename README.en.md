@@ -236,19 +236,31 @@ Copy this directory to your Agent's skills directory, or in Reasonix:
 
 > 🤖 **Install guide**: after installing this Skill, the Agent runs `check_deps.py` on first use to check the environment; missing dependencies are auto-downloaded (see Environment Check above). The query feature has zero dependencies and works immediately.
 
-Then just talk:
+Then just talk (the Agent runs `today_classes.py` and **shows the script output verbatim**):
 
-> **You**: What classes do I have today?
->
-> **Agent**:
-> 📚 2026-2027 AY Semester 1 · Week 3 Wednesday
-> ┌─────────────┬───────┬───────────┬────────┬───────┬─────────┐
-> │ Time        │ Sess  │ Course    │ Teacher│ Credit│ Room    │
-> ├─────────────┼───────┼───────────┼────────┼───────┼─────────┤
-> │ 10:20-12:00 │ 3-4   │ Sample B  │ Mr. Li │ 2     │ 2-0202  │
-> └─────────────┴───────┴───────────┴────────┴───────┴─────────┘
-> 🏫 Huaxi Campus · 1 course
-> 🎓 Today: 2 credits / Total: 7.5 (26.7%)
+```text
+You: What classes do I have today?
+
+Agent:
+📚 2026-2027 AY Semester 1 · Week 3 Friday
+🏫 Huaxi Campus · 2 big sections (2 sub-sessions)
+
+┌──────────────────────┐
+│  1-2   08:20-10:00   │
+│  Demo Course A       │
+│  1-0101              │
+│  Teacher Zhang       │
+├──────────────────────┤
+│  5-6   14:00-15:40   │
+│  Demo Course C       │
+│  3-0303              │
+│  Teacher Wang        │
+└──────────────────────┘
+
+🎓 Today: 6.5 credits / Total: 18.75 (34.7%)
+```
+
+> For a full-week schedule, the Agent likewise **shows the 7-column × 5-row grid verbatim** (rooms already bolded with `**`); see the Week Grid View above.
 
 ## 📦 Project Structure
 
