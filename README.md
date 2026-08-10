@@ -13,7 +13,7 @@
 重庆理工大学课表查询 Skill — 问一句"今天有什么课",自动登录教务抓课表、算周次、查学分<br>
 基于 Python + Playwright(真实浏览器自动过 SSO / 瑞数 WAF)
 
-[反馈问题](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [更新日志](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
+[反馈问题](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [更新日志](CHANGELOG.md) <br>
 [快速开始](#快速开始) · [技术原理](#-技术原理) · [免责声明](#-免责声明)
 
 [![Version](https://img.shields.io/badge/version-1.2.5-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
@@ -117,7 +117,7 @@
 
 | 方式 | 说明 |
 |------|------|
-| **zip 包(推荐)** | [cqut-timetable-skill-1.2.5.zip](dist/cqut-timetable-skill-1.2.5.zip) — 解压即用,含全部 11 个文件 |
+| **zip 包(推荐)** | [cqut-timetable-skill-1.2.5.zip](dist/cqut-timetable-skill-1.2.5.zip) — 解压即用,含全部 12 个文件 |
 | **GitHub Releases** | [Releases 页](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) 下载对应版本源码包 |
 | **Git 克隆** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
@@ -275,6 +275,7 @@ cqut-timetable-skill/
 ├── custom_courses.example.json  # 自定义课程示例(自习/选修等,v1.2.0)
 ├── sample_schedule.json         # 示例课表(脱敏,演示用)
 ├── SKILL.md                     # Skill 定义(供 Agent 加载)
+├── CHANGELOG.md                 # 更新日志(从 v1.0.0 起)
 └── .gitignore                   # 忽略真实 config.json / custom_courses.json / 真实课表(含个人信息)
 ```
 

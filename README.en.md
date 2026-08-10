@@ -13,7 +13,7 @@
 CQUT class schedule query Skill — ask "what classes do I have today" and get schedule, weeks, credits instantly<br>
 Powered by Python + Playwright (real browser to bypass SSO / RS-WAF)
 
-[Issues](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [Changelog](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) <br>
+[Issues](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [Changelog](CHANGELOG.md) <br>
 [Quick Start](#quick-start) · [How It Works](#-how-it-works) · [Disclaimer](#-disclaimer)
 
 [![Version](https://img.shields.io/badge/version-1.2.5-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
@@ -117,7 +117,7 @@ Tired of opening the academic portal, typing your student ID and password, and f
 
 | Method | Instructions |
 |--------|-------------|
-| **Zip (recommended)** | [cqut-timetable-skill-1.2.5.zip](dist/cqut-timetable-skill-1.2.5.zip) — unzip and use; contains all 11 files |
+| **Zip (recommended)** | [cqut-timetable-skill-1.2.5.zip](dist/cqut-timetable-skill-1.2.5.zip) — unzip and use; contains all 12 files |
 | **GitHub Releases** | Download source archives from the [Releases page](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) |
 | **Git clone** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
@@ -270,6 +270,7 @@ cqut-timetable-skill/
 ├── custom_courses.example.json  # Custom course template (self-study, electives; v1.2.0)
 ├── sample_schedule.json         # Sample schedule data (anonymized, for demo)
 ├── SKILL.md                     # Skill definition (loaded by Agent)
+├── CHANGELOG.md                 # Changelog (since v1.0.0)
 └── .gitignore                   # Ignores config.json / custom_courses.json / real schedule (contains PII)
 ```
 
