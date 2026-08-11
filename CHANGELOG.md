@@ -4,6 +4,21 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [v2.0.0] - 2026-08-09
+
+### 🎉 第二个正式版本
+从 v1.2.5 起输出全面升级为**紧凑 markdown 表格**,这是 2.x 系列的正式首发。
+
+### ✨ 核心特性
+- **单日查询**:三列 markdown 表格(节次+时间段 / 课程 / **教室**),教室加粗
+- **单周查询**:七列 markdown 表格(周一~周日),每大节一行,格内 `课程 / **教室**`,节次列带时间段
+- 输出不含教师,更加简洁
+- 彻底移除 `<br>`(避免聊天界面转义成字面量)
+
+### 🔧 工程完善
+- 新增 `CHANGELOG.md`(从 v1.0.0 起完整更新日志)
+- README(中英)示例与项目结构同步
+
 ## [v1.2.5] - 2026-08-09
 
 ### ✨ 新增
@@ -95,7 +110,8 @@
 - **表格输出**:单日卡片 / 单周网格
 - **隐私安全**:学号密码只存本机 `config.json`(已 .gitignore),示例去除真实人名
 
-[unreleased]: https://github.com/Lee-Hilex/cqut-timetable-skill/compare/v1.2.5...HEAD
+[unreleased]: https://github.com/Lee-Hilex/cqut-timetable-skill/compare/v2.0.0...HEAD
+[v2.0.0]: https://github.com/Lee-Hilex/cqut-timetable-skill/compare/v1.2.5...v2.0.0
 [v1.2.5]: https://github.com/Lee-Hilex/cqut-timetable-skill/compare/v1.2.4...v1.2.5
 [v1.2.4]: https://github.com/Lee-Hilex/cqut-timetable-skill/compare/v1.2.3...v1.2.4
 [v1.2.3]: https://github.com/Lee-Hilex/cqut-timetable-skill/compare/v1.2.2...v1.2.3

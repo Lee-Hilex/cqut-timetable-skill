@@ -16,7 +16,7 @@
 [反馈问题](https://github.com/Lee-Hilex/cqut-timetable-skill/issues) · [更新日志](CHANGELOG.md) <br>
 [快速开始](#快速开始) · [技术原理](#-技术原理) · [免责声明](#-免责声明)
 
-[![Version](https://img.shields.io/badge/version-1.2.5-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/Lee-Hilex/cqut-timetable-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/Lee-Hilex/cqut-timetable-skill?color=ffcb47&labelColor=black)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
@@ -117,7 +117,7 @@
 
 | 方式 | 说明 |
 |------|------|
-| **zip 包(推荐)** | [cqut-timetable-skill-1.2.5.zip](dist/cqut-timetable-skill-1.2.5.zip) — 解压即用,含全部 12 个文件 |
+| **zip 包(推荐)** | [cqut-timetable-skill-2.0.0.zip](dist/cqut-timetable-skill-2.0.0.zip) — 解压即用,含全部 12 个文件 |
 | **GitHub Releases** | [Releases 页](https://github.com/Lee-Hilex/cqut-timetable-skill/releases) 下载对应版本源码包 |
 | **Git 克隆** | `git clone git@github.com:Lee-Hilex/cqut-timetable-skill.git` |
 
